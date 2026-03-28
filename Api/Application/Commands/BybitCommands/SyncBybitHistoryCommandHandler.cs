@@ -46,9 +46,12 @@ public class SyncBybitHistoryCommandHandler(
             var config = JsonSerializer.Deserialize<BybitConfiguration>(connector.ConfigurationJson)
                 ?? throw new BadRequestException("Invalid Bybit configuration");
 
-            logger.LogInformation(
-                "Starting Bybit history sync for connector {ConnectorId}. StartDate: {StartDate}, EndDate: {EndDate}, Symbol: {Symbol}",
-                request.ConnectorInstanceId, request.StartDate, request.EndDate, request.Symbol ?? "all");
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation(
+                    "Starting Bybit history sync for connector {ConnectorId}. StartDate: {StartDate}, EndDate: {EndDate}, Symbol: {Symbol}",
+                    request.ConnectorInstanceId, request.StartDate, request.EndDate, request.Symbol ?? "all");
+            }
 
             // 2. Determine date range
             var startDate = request.StartDate ?? DateTime.UtcNow.AddYears(-2); // Default: 2 years back
@@ -66,9 +69,12 @@ public class SyncBybitHistoryCommandHandler(
 
                 try
                 {
-                    logger.LogInformation(
-                        "Syncing chunk: {StartDate} to {EndDate}",
-                        currentStart, currentEnd);
+                    if (logger.IsEnabled(LogLevel.Information))
+                    {
+                        logger.LogInformation(
+                            "Syncing chunk: {StartDate} to {EndDate}",
+                            currentStart, currentEnd);
+                    }
 
                     var orders = await bybitService.GetOrderHistoryAsync(
                         config.ApiKey,
@@ -83,7 +89,10 @@ public class SyncBybitHistoryCommandHandler(
                     totalApiCalls++;
                     totalFetched += orders.Count;
 
-                    logger.LogInformation("Fetched {Count} orders for chunk", orders.Count);
+                    if (logger.IsEnabled(LogLevel.Information))
+                    {
+                        logger.LogInformation("Fetched {Count} orders for chunk", orders.Count);
+                    }
 
                     // 4. Store/update orders in database
                     foreach (var orderDto in orders)
@@ -163,9 +172,12 @@ public class SyncBybitHistoryCommandHandler(
 
             var syncEndTime = DateTime.UtcNow;
 
-            logger.LogInformation(
-                "Bybit history sync completed. Total fetched: {TotalFetched}, New: {New}, Updated: {Updated}, API calls: {ApiCalls}, Errors: {Errors}",
-                totalFetched, newOrders, updatedOrders, totalApiCalls, errors.Count);
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation(
+                    "Bybit history sync completed. Total fetched: {TotalFetched}, New: {New}, Updated: {Updated}, API calls: {ApiCalls}, Errors: {Errors}",
+                    totalFetched, newOrders, updatedOrders, totalApiCalls, errors.Count);
+            }
 
             return new SyncBybitHistoryResult
             {

@@ -3,6 +3,7 @@ using Api.Extensions;
 using Api.Infrastructure.Metrics;
 using Domain.Exceptions;
 using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace Api.Application.Behaviors;
 
@@ -14,7 +15,10 @@ internal sealed class LoggingBehavior<TRequest, TResponse>(ILogger<LoggingBehavi
         var requestName = request.GetGenericTypeName();
         var requestType = typeof(TRequest).Name.Contains("Command", StringComparison.OrdinalIgnoreCase) ? "command" : "query";
 
-        logger.LogInformation("Handling {RequestType} {RequestName} ({@Request})", requestType, requestName, request);
+        if (logger.IsEnabled(LogLevel.Information))
+        {
+            logger.LogInformation("Handling {RequestType} {RequestName} ({@Request})", requestType, requestName, request);
+        }
 
         var stopwatch = Stopwatch.StartNew();
         string status = "success";
@@ -23,7 +27,11 @@ internal sealed class LoggingBehavior<TRequest, TResponse>(ILogger<LoggingBehavi
         try
         {
             var response = await next(cancellationToken);
-            logger.LogInformation("{RequestType} {RequestName} handled - response: {@Response}", requestType, requestName, response);
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation("{RequestType} {RequestName} handled - response: {@Response}", requestType, requestName, response);
+            }
+
             return response;
         }
         catch (Exception ex)

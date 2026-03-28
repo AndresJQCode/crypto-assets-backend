@@ -36,7 +36,10 @@ public class InfobipEmailSender<TUser>(
 
             await SendEmailAsync(FromEmail, new List<string> { email }, subject, content);
 
-            logger.LogInformation("Email de confirmación enviado exitosamente a {Email}", email);
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation("Email de confirmación enviado exitosamente a {Email}", email);
+            }
         }
         catch (Exception ex)
         {
@@ -58,7 +61,10 @@ public class InfobipEmailSender<TUser>(
 
             await SendEmailAsync(FromEmail, new List<string> { email }, subject, content);
 
-            logger.LogInformation("Email de restablecimiento de contraseña enviado exitosamente a {Email}", email);
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation("Email de restablecimiento de contraseña enviado exitosamente a {Email}", email);
+            }
         }
         catch (Exception ex)
         {
@@ -80,7 +86,10 @@ public class InfobipEmailSender<TUser>(
 
             await SendEmailAsync(FromEmail, new List<string> { email }, subject, content);
 
-            logger.LogInformation("Email de código de restablecimiento enviado exitosamente a {Email}", email);
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation("Email de código de restablecimiento enviado exitosamente a {Email}", email);
+            }
         }
         catch (Exception ex)
         {

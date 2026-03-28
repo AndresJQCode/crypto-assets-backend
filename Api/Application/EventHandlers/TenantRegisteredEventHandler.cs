@@ -6,6 +6,7 @@ using Infrastructure;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Api.Application.EventHandlers;
@@ -33,7 +34,10 @@ public class TenantRegisteredEventHandler(
                 return;
             }
 
-            logger.LogInformation("Found {Count} SuperAdmin users to notify", superAdmins.Count);
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation("Found {Count} SuperAdmin users to notify", superAdmins.Count);
+            }
 
             // Send email to each SuperAdmin
             foreach (var superAdmin in superAdmins)
@@ -41,10 +45,13 @@ public class TenantRegisteredEventHandler(
                 await SendRegistrationEmailAsync(superAdmin, notification, cancellationToken);
             }
 
-            logger.LogInformation(
-                "Successfully sent {Count} notification emails for tenant registration: {TenantName}",
-                superAdmins.Count,
-                notification.TenantName);
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation(
+                    "Successfully sent {Count} notification emails for tenant registration: {TenantName}",
+                    superAdmins.Count,
+                    notification.TenantName);
+            }
         }
         catch (Exception ex)
         {
@@ -114,9 +121,12 @@ public class TenantRegisteredEventHandler(
                 htmlBody: message,
                 cancellationToken: cancellationToken);
 
-            logger.LogDebug(
-                "Notification email sent to SuperAdmin: {Email}",
-                superAdmin.Email);
+            if (logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.LogDebug(
+                    "Notification email sent to SuperAdmin: {Email}",
+                    superAdmin.Email);
+            }
         }
         catch (Exception ex)
         {

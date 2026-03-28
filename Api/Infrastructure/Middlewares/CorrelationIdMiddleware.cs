@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Serilog.Context;
 
 namespace Api.Infrastructure.Middlewares;
@@ -34,7 +35,10 @@ internal sealed class CorrelationIdMiddleware
         // Esto hace que todos los logs generados durante esta request incluyan automáticamente el Correlation ID
         using (LogContext.PushProperty("CorrelationId", correlationId))
         {
-            _logger.LogDebug("Correlation ID establecido: {CorrelationId}", correlationId);
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("Correlation ID establecido: {CorrelationId}", correlationId);
+            }
 
             await _next(context);
         }

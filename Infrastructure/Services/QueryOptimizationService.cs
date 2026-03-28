@@ -41,7 +41,10 @@ public class QueryOptimizationService : IQueryOptimizationService
     {
         var optimizedQuery = ApplyOptimizations(query);
 
-        _logger.LogDebug("Executing optimized ToList query for type: {Type}", typeof(T).Name);
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            _logger.LogDebug("Executing optimized ToList query for type: {Type}", typeof(T).Name);
+        }
 
         return await optimizedQuery.ToListAsync(cancellationToken);
     }
@@ -50,7 +53,10 @@ public class QueryOptimizationService : IQueryOptimizationService
     {
         var optimizedQuery = ApplyOptimizations(query);
 
-        _logger.LogDebug("Executing optimized FirstOrDefault query for type: {Type}", typeof(T).Name);
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            _logger.LogDebug("Executing optimized FirstOrDefault query for type: {Type}", typeof(T).Name);
+        }
 
         return await optimizedQuery.FirstOrDefaultAsync(cancellationToken);
     }
@@ -59,7 +65,10 @@ public class QueryOptimizationService : IQueryOptimizationService
     {
         var optimizedQuery = ApplyOptimizations(query, false); // No split query para count
 
-        _logger.LogDebug("Executing optimized Count query for type: {Type}", typeof(T).Name);
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            _logger.LogDebug("Executing optimized Count query for type: {Type}", typeof(T).Name);
+        }
 
         return await optimizedQuery.CountAsync(cancellationToken);
     }
@@ -68,7 +77,10 @@ public class QueryOptimizationService : IQueryOptimizationService
     {
         var optimizedQuery = ApplyOptimizations(query, false); // No split query para any
 
-        _logger.LogDebug("Executing optimized Any query for type: {Type}", typeof(T).Name);
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            _logger.LogDebug("Executing optimized Any query for type: {Type}", typeof(T).Name);
+        }
 
         return await optimizedQuery.AnyAsync(cancellationToken);
     }

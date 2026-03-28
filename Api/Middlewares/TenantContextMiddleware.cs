@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Microsoft.Extensions.Logging;
 
 namespace Api.Middlewares;
 
@@ -43,10 +44,13 @@ public class TenantContextMiddleware(RequestDelegate next, ILogger<TenantContext
             // Store TenantId in HttpContext.Items for use in repositories and services
             context.Items["TenantId"] = tenantId.Value;
 
-            logger.LogDebug(
-                "Resolved tenant context: {TenantId} for path {Path}",
-                tenantId,
-                path);
+            if (logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.LogDebug(
+                    "Resolved tenant context: {TenantId} for path {Path}",
+                    tenantId,
+                    path);
+            }
         }
 
         await next(context);

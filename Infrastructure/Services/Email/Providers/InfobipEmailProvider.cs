@@ -40,10 +40,13 @@ public class InfobipEmailProvider : IEmailProvider, IDisposable
     {
         try
         {
-            _logger.LogDebug(
-                "Sending email via {Provider} to {Recipients}",
-                ProviderName,
-                string.Join(", ", to));
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug(
+                    "Sending email via {Provider} to {Recipients}",
+                    ProviderName,
+                    string.Join(", ", to));
+            }
 
             await _infobipClient.SendEmailAsync(
                 from: from,
@@ -54,10 +57,13 @@ public class InfobipEmailProvider : IEmailProvider, IDisposable
                 bcc: bcc?.ToList(),
                 cancellationToken: cancellationToken);
 
-            _logger.LogInformation(
-                "Email sent successfully via {Provider} to {Recipients}",
-                ProviderName,
-                string.Join(", ", to));
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                _logger.LogInformation(
+                    "Email sent successfully via {Provider} to {Recipients}",
+                    ProviderName,
+                    string.Join(", ", to));
+            }
         }
         catch (Exception ex)
         {

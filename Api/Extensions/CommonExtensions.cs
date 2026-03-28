@@ -14,6 +14,7 @@ using Infrastructure.ServiceBus;
 using Infrastructure.ServiceBus.Interfaces;
 using Infrastructure.Services.Loggers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.AspNetCore.Identity;
@@ -125,19 +126,25 @@ internal static class CommonExtensions
 
     public static async Task<bool> CheckHealthAsync(this WebApplication app)
     {
-        app.Logger.LogInformation("Running health checks...");
+        if (app.Logger.IsEnabled(LogLevel.Information))
+        {
+            app.Logger.LogInformation("Running health checks...");
+        }
 
         // Do a health check on startup, this will throw an exception if any of the checks fail
         var report = await app.Services.GetRequiredService<HealthCheckService>().CheckHealthAsync();
 
         if (report.Status == HealthStatus.Unhealthy)
         {
-            app.Logger.LogCritical("Health checks failed!");
-            foreach (var entry in report.Entries)
+            if (app.Logger.IsEnabled(LogLevel.Critical))
             {
-                if (entry.Value.Status == HealthStatus.Unhealthy)
+                app.Logger.LogCritical("Health checks failed!");
+                foreach (var entry in report.Entries)
                 {
-                    app.Logger.LogCritical("{Check}: {Status}", entry.Key, entry.Value.Status);
+                    if (entry.Value.Status == HealthStatus.Unhealthy)
+                    {
+                        app.Logger.LogCritical("{Check}: {Status}", entry.Key, entry.Value.Status);
+                    }
                 }
             }
 
@@ -241,7 +248,10 @@ internal static class CommonExtensions
                         return;
                     }
 
-                    logger.LogInformation("Validating JWT for user ID: {UserId}", userId);
+                    if (logger.IsEnabled(LogLevel.Information))
+                    {
+                        logger.LogInformation("Validating JWT for user ID: {UserId}", userId);
+                    }
 
                     var user = await userManager.FindByIdAsync(userId);
 
@@ -256,8 +266,11 @@ internal static class CommonExtensions
                     var jwtToken = context.SecurityToken as Microsoft.IdentityModel.JsonWebTokens.JsonWebToken;
                     var tokenInDb = await userManager.GetAuthenticationTokenAsync(user, AppConstants.Authentication.DefaultProvider, AppConstants.Authentication.AccessTokenName);
 
-                    logger.LogInformation("Checking token for user {UserId} with provider '{Provider}': {HasToken}",
-                        userId, AppConstants.Authentication.DefaultProvider, !string.IsNullOrEmpty(tokenInDb));
+                    if (logger.IsEnabled(LogLevel.Information))
+                    {
+                        logger.LogInformation("Checking token for user {UserId} with provider '{Provider}': {HasToken}",
+                            userId, AppConstants.Authentication.DefaultProvider, !string.IsNullOrEmpty(tokenInDb));
+                    }
 
                     if (jwtToken?.EncodedToken != tokenInDb)
                     {
@@ -267,7 +280,10 @@ internal static class CommonExtensions
                         return;
                     }
 
-                    logger.LogInformation("JWT validation successful for user ID: {UserId}", userId);
+                    if (logger.IsEnabled(LogLevel.Information))
+                    {
+                        logger.LogInformation("JWT validation successful for user ID: {UserId}", userId);
+                    }
 
                     // Agregar roles dinámicamente desde la base de datos
                     var userRoles = await userManager.GetRolesAsync(user);

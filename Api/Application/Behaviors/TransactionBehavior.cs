@@ -38,11 +38,17 @@ internal sealed class TransactionBehavior<TRequest, TResponse>(
                 {
                     using (logger.BeginScope(new List<KeyValuePair<string, object>> { new("TransactionContext", transaction.TransactionId) }))
                     {
-                        logger.LogInformation("Begin transaction {TransactionId} for {CommandName} ({@Command})", transaction.TransactionId, typeName, request);
+                        if (logger.IsEnabled(LogLevel.Information))
+                        {
+                            logger.LogInformation("Begin transaction {TransactionId} for {CommandName} ({@Command})", transaction.TransactionId, typeName, request);
+                        }
 
                         response = await next();
 
-                        logger.LogInformation("Commit transaction {TransactionId} for {CommandName}", transaction.TransactionId, typeName);
+                        if (logger.IsEnabled(LogLevel.Information))
+                        {
+                            logger.LogInformation("Commit transaction {TransactionId} for {CommandName}", transaction.TransactionId, typeName);
+                        }
 
                         await dbContext.CommitTransactionAsync(transaction);
 

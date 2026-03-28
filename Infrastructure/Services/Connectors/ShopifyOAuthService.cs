@@ -48,10 +48,13 @@ public class ShopifyOAuthService(
             $"&redirect_uri={Uri.EscapeDataString(_shopifySettings.RedirectUri)}" +
             $"&state={state}";
 
-        _logger.LogInformation(
-            "Generated Shopify OAuth URL for shop {ShopDomain} with scopes {Scopes}",
-            normalizedDomain,
-            scopeString);
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation(
+                "Generated Shopify OAuth URL for shop {ShopDomain} with scopes {Scopes}",
+                normalizedDomain,
+                scopeString);
+        }
 
         return Task.FromResult(authUrl);
     }
@@ -100,9 +103,12 @@ public class ShopifyOAuthService(
                 throw new DomainException("Invalid token response from Shopify");
             }
 
-            _logger.LogInformation(
-                "Successfully exchanged OAuth code for access token for shop {ShopDomain}",
-                normalizedDomain);
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                _logger.LogInformation(
+                    "Successfully exchanged OAuth code for access token for shop {ShopDomain}",
+                    normalizedDomain);
+            }
 
             return new OAuthTokenResponse(
                 tokenResponse.AccessToken,
@@ -139,7 +145,11 @@ public class ShopifyOAuthService(
 
             if (response.IsSuccessStatusCode)
             {
-                _logger.LogInformation("Connection validation successful for shop {ShopDomain}", normalizedDomain);
+                if (_logger.IsEnabled(LogLevel.Information))
+                {
+                    _logger.LogInformation("Connection validation successful for shop {ShopDomain}", normalizedDomain);
+                }
+
                 return true;
             }
 
@@ -194,10 +204,13 @@ public class ShopifyOAuthService(
                 throw new DomainException("Invalid shop response from Shopify");
             }
 
-            _logger.LogInformation(
-                "Successfully fetched metadata for shop {ShopDomain} (Name: {ShopName})",
-                normalizedDomain,
-                shopResponse.Shop.Name);
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                _logger.LogInformation(
+                    "Successfully fetched metadata for shop {ShopDomain} (Name: {ShopName})",
+                    normalizedDomain,
+                    shopResponse.Shop.Name);
+            }
 
             // Extract scopes from the granted permissions (if available in response headers)
             var grantedScopes = response.Headers.TryGetValues("X-Shopify-API-Request-Limit", out var scopeValues)

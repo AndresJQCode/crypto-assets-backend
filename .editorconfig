@@ -330,6 +330,3 @@ dotnet_style_qualification_for_event = false:silent
 csharp_style_expression_bodied_methods = false:silent
 csharp_style_expression_bodied_constructors = false:silent
 csharp_style_expression_bodied_properties = false:silent
-
-# Disable CA1873 (Logging performance rule - false positives in .NET 10)
-dotnet_diagnostic.CA1873.severity = none

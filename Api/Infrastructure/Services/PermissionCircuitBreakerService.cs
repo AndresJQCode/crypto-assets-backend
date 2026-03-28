@@ -39,14 +39,24 @@ internal sealed class PermissionCircuitBreakerService(
         try
         {
             using var cts = new CancellationTokenSource(Timeout);
-            logger.LogDebug("ExecuteWithCircuitBreakerAsync<T>: Ejecutando operación con timeout de {Timeout} segundos", Timeout.TotalSeconds);
+            if (logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.LogDebug("ExecuteWithCircuitBreakerAsync<T>: Ejecutando operación con timeout de {Timeout} segundos", Timeout.TotalSeconds);
+            }
 
             // Aplicar el timeout a la operación usando WaitAsync
             var operationTask = operation();
-            logger.LogDebug("ExecuteWithCircuitBreakerAsync<T>: Operación iniciada, esperando resultado con timeout");
+            if (logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.LogDebug("ExecuteWithCircuitBreakerAsync<T>: Operación iniciada, esperando resultado con timeout");
+            }
+
             var result = await operationTask.WaitAsync(cts.Token);
 
-            logger.LogDebug("ExecuteWithCircuitBreakerAsync<T>: Operación completada exitosamente");
+            if (logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.LogDebug("ExecuteWithCircuitBreakerAsync<T>: Operación completada exitosamente");
+            }
 
             // Éxito - resetear contador de fallos
             lock (_lock)
@@ -55,7 +65,10 @@ internal sealed class PermissionCircuitBreakerService(
                 _circuitOpen = false;
             }
 
-            logger.LogDebug("Operación exitosa, circuit breaker cerrado");
+            if (logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.LogDebug("Operación exitosa, circuit breaker cerrado");
+            }
 
             // Si la operación devuelve un bool directamente
             if (result is bool boolResult)
@@ -112,7 +125,10 @@ internal sealed class PermissionCircuitBreakerService(
     public async Task<bool> ExecuteWithCircuitBreakerAsync(Func<Task<bool>> operation, bool fallbackValue = false)
     {
         var circuitState = CircuitState;
-        logger.LogDebug("ExecuteWithCircuitBreakerAsync (bool): Estado del circuit breaker: {CircuitState}, IsOpen: {IsOpen}", circuitState, IsCircuitOpen);
+        if (logger.IsEnabled(LogLevel.Debug))
+        {
+            logger.LogDebug("ExecuteWithCircuitBreakerAsync (bool): Estado del circuit breaker: {CircuitState}, IsOpen: {IsOpen}", circuitState, IsCircuitOpen);
+        }
 
         if (IsCircuitOpen)
         {
@@ -123,14 +139,24 @@ internal sealed class PermissionCircuitBreakerService(
         try
         {
             using var cts = new CancellationTokenSource(Timeout);
-            logger.LogDebug("ExecuteWithCircuitBreakerAsync (bool): Ejecutando operación con timeout de {Timeout} segundos", Timeout.TotalSeconds);
+            if (logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.LogDebug("ExecuteWithCircuitBreakerAsync (bool): Ejecutando operación con timeout de {Timeout} segundos", Timeout.TotalSeconds);
+            }
 
             // Aplicar el timeout a la operación usando WaitAsync
             var operationTask = operation();
-            logger.LogDebug("ExecuteWithCircuitBreakerAsync (bool): Operación iniciada, esperando resultado con timeout");
+            if (logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.LogDebug("ExecuteWithCircuitBreakerAsync (bool): Operación iniciada, esperando resultado con timeout");
+            }
+
             var result = await operationTask.WaitAsync(cts.Token);
 
-            logger.LogDebug("ExecuteWithCircuitBreakerAsync (bool): Operación completada exitosamente con resultado: {Result}", result);
+            if (logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.LogDebug("ExecuteWithCircuitBreakerAsync (bool): Operación completada exitosamente con resultado: {Result}", result);
+            }
 
             // Éxito - resetear contador de fallos
             lock (_lock)
@@ -139,7 +165,11 @@ internal sealed class PermissionCircuitBreakerService(
                 _circuitOpen = false;
             }
 
-            logger.LogDebug("Verificación de permisos exitosa, circuit breaker cerrado");
+            if (logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.LogDebug("Verificación de permisos exitosa, circuit breaker cerrado");
+            }
+
             return result;
         }
         catch (OperationCanceledException) when (IsCircuitOpen == false)
@@ -196,7 +226,10 @@ internal sealed class PermissionCircuitBreakerService(
                 {
                     _circuitOpen = false;
                     _failureCount = 0;
-                    logger.LogInformation("Circuit breaker cerrado después del período de recuperación");
+                    if (logger.IsEnabled(LogLevel.Information))
+                    {
+                        logger.LogInformation("Circuit breaker cerrado después del período de recuperación");
+                    }
                 }
 
                 return _circuitOpen;

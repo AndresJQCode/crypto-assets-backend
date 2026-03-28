@@ -92,7 +92,10 @@ public class RecaptchaService(
         {
             System.Console.WriteLine("The action attribute in reCAPTCHA tag is: " +
                 response.TokenProperties.Action.ToString());
-            logger.LogDebug("The action attribute in the reCAPTCHA tag does not match the action you are expecting to score");
+            if (logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.LogDebug("The action attribute in the reCAPTCHA tag does not match the action you are expecting to score");
+            }
 
             return new RecaptchaValidationResult
             {
@@ -107,7 +110,10 @@ public class RecaptchaService(
         // For more information on interpreting the assessment, see:
         // https://cloud.google.com/recaptcha/docs/interpret-assessment
 
-        logger.LogDebug("Validación de reCAPTCHA Enterprise exitosa. Score: {Score}", (decimal)response.RiskAnalysis.Score);
+        if (logger.IsEnabled(LogLevel.Debug))
+        {
+            logger.LogDebug("Validación de reCAPTCHA Enterprise exitosa. Score: {Score}", (decimal)response.RiskAnalysis.Score);
+        }
 
         double score = response.RiskAnalysis.Score;
 

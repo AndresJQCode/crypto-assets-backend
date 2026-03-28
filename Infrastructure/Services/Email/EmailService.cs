@@ -39,10 +39,13 @@ public class EmailService(
                 htmlBody: content,
                 cancellationToken: cancellationToken);
 
-            logger.LogInformation(
-                "Confirmation email sent successfully to {Email} using {Provider}",
-                email,
-                emailProvider.ProviderName);
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation(
+                    "Confirmation email sent successfully to {Email} using {Provider}",
+                    email,
+                    emailProvider.ProviderName);
+            }
         }
         catch (Exception ex)
         {
@@ -72,10 +75,13 @@ public class EmailService(
                 htmlBody: content,
                 cancellationToken: cancellationToken);
 
-            logger.LogInformation(
-                "Password reset email sent successfully to {Email} using {Provider}",
-                email,
-                emailProvider.ProviderName);
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation(
+                    "Password reset email sent successfully to {Email} using {Provider}",
+                    email,
+                    emailProvider.ProviderName);
+            }
         }
         catch (Exception ex)
         {
@@ -105,10 +111,13 @@ public class EmailService(
                 htmlBody: content,
                 cancellationToken: cancellationToken);
 
-            logger.LogInformation(
-                "Password reset code email sent successfully to {Email} using {Provider}",
-                email,
-                emailProvider.ProviderName);
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation(
+                    "Password reset code email sent successfully to {Email} using {Provider}",
+                    email,
+                    emailProvider.ProviderName);
+            }
         }
         catch (Exception ex)
         {
@@ -137,10 +146,13 @@ public class EmailService(
                 bcc: bcc,
                 cancellationToken: cancellationToken);
 
-            logger.LogInformation(
-                "Custom email sent successfully to {Recipients} using {Provider}",
-                string.Join(", ", to),
-                emailProvider.ProviderName);
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation(
+                    "Custom email sent successfully to {Recipients} using {Provider}",
+                    string.Join(", ", to),
+                    emailProvider.ProviderName);
+            }
         }
         catch (Exception ex)
         {

@@ -42,14 +42,17 @@ public class AuditTrailService : IAuditTrail
                 ? JsonSerializer.Serialize(entitySnapshot, JsonOptions)
                 : null;
 
-            _logger.LogInformation(
-                "Entidad {EntityType} con ID {EntityId} eliminada por {DeletedByName} (ID: {DeletedBy}). Razón: {Reason}. Snapshot: {Snapshot}",
-                entityType,
-                entityId,
-                deletedByName ?? "Usuario desconocido",
-                deletedBy,
-                reason ?? "No especificada",
-                snapshotJson ?? "N/A");
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                _logger.LogInformation(
+                    "Entidad {EntityType} con ID {EntityId} eliminada por {DeletedByName} (ID: {DeletedBy}). Razón: {Reason}. Snapshot: {Snapshot}",
+                    entityType,
+                    entityId,
+                    deletedByName ?? "Usuario desconocido",
+                    deletedBy,
+                    reason ?? "No especificada",
+                    snapshotJson ?? "N/A");
+            }
 
             var auditLog = AuditLog.CreateDeletionLog(
                 entityType,

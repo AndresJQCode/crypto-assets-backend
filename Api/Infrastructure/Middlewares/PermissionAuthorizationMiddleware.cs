@@ -9,6 +9,7 @@ using Infrastructure;
 using Infrastructure.Constants;
 using Infrastructure.Metrics;
 using MediatR;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Api.Infrastructure.Middlewares;
@@ -39,22 +40,32 @@ internal sealed class PermissionAuthorizationMiddleware(
 
     public async Task InvokeAsync(HttpContext context)
     {
-        logger.LogInformation("PermissionAuthorizationMiddleware: Iniciando para path: {Path}, Method: {Method}",
-            context.Request.Path, context.Request.Method);
+        if (logger.IsEnabled(LogLevel.Information))
+        {
+            logger.LogInformation("PermissionAuthorizationMiddleware: Iniciando para path: {Path}, Method: {Method}",
+                context.Request.Path, context.Request.Method);
+        }
 
         var middlewareOptions = appSettings.CurrentValue.PermissionMiddleware;
 
         // Verificar si el path debe ser excluido
         if (middlewareOptions.ShouldExcludePath(context.Request.Path))
         {
-            logger.LogInformation("PermissionAuthorizationMiddleware: Path {Path} está excluido, saltando verificación", context.Request.Path);
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation("PermissionAuthorizationMiddleware: Path {Path} está excluido, saltando verificación", context.Request.Path);
+            }
+
             await next(context);
             return;
         }
 
         var endpoint = context.GetEndpoint();
-        logger.LogInformation("PermissionAuthorizationMiddleware: Endpoint resuelto: {EndpointDisplayName}, Endpoint es null: {IsNull}",
-            endpoint?.DisplayName, endpoint == null);
+        if (logger.IsEnabled(LogLevel.Information))
+        {
+            logger.LogInformation("PermissionAuthorizationMiddleware: Endpoint resuelto: {EndpointDisplayName}, Endpoint es null: {IsNull}",
+                endpoint?.DisplayName, endpoint == null);
+        }
 
         if (endpoint == null)
         {
@@ -66,14 +77,21 @@ internal sealed class PermissionAuthorizationMiddleware(
 
         if (permissionAttribute == null)
         {
-            logger.LogInformation("PermissionAuthorizationMiddleware: Endpoint {EndpointDisplayName} no tiene RequirePermissionAttribute, saltando verificación. Metadata disponible: {MetadataCount}",
-                endpoint?.DisplayName, endpoint?.Metadata?.Count ?? 0);
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation("PermissionAuthorizationMiddleware: Endpoint {EndpointDisplayName} no tiene RequirePermissionAttribute, saltando verificación. Metadata disponible: {MetadataCount}",
+                    endpoint?.DisplayName, endpoint?.Metadata?.Count ?? 0);
+            }
+
             await next(context);
             return;
         }
 
-        logger.LogInformation("PermissionAuthorizationMiddleware: Endpoint requiere permiso - Resource: {Resource}, Action: {Action}",
-            permissionAttribute.Resource, permissionAttribute.Action);
+        if (logger.IsEnabled(LogLevel.Information))
+        {
+            logger.LogInformation("PermissionAuthorizationMiddleware: Endpoint requiere permiso - Resource: {Resource}, Action: {Action}",
+                permissionAttribute.Resource, permissionAttribute.Action);
+        }
 
         var stopwatch = Stopwatch.StartNew();
 
@@ -96,7 +114,7 @@ internal sealed class PermissionAuthorizationMiddleware(
             }
 
             // Log de acceso exitoso para auditoría
-            if (middlewareOptions.EnableAuditLogging)
+            if (middlewareOptions.EnableAuditLogging && logger.IsEnabled(LogLevel.Information))
             {
                 var requestDetails = middlewareOptions.IncludeRequestDetails
                     ? $" desde {context.Connection.RemoteIpAddress}"
@@ -177,13 +195,20 @@ internal sealed class PermissionAuthorizationMiddleware(
 
         try
         {
-            logger.LogDebug("CheckPermissionAsync: Verificando permiso para usuario {UserId}, recurso: {Resource}, acción: {Action}",
-                userId, permissionAttribute.Resource, permissionAttribute.Action);
+            if (logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.LogDebug("CheckPermissionAsync: Verificando permiso para usuario {UserId}, recurso: {Resource}, acción: {Action}",
+                    userId, permissionAttribute.Resource, permissionAttribute.Action);
+            }
 
             var hasPermission = await circuitBreakerService.ExecuteWithCircuitBreakerAsync(
                 async () =>
                 {
-                    logger.LogDebug("------CheckPermissionAsync: Enviando CheckUserPermissionQuery a MediatR");
+                    if (logger.IsEnabled(LogLevel.Debug))
+                    {
+                        logger.LogDebug("------CheckPermissionAsync: Enviando CheckUserPermissionQuery a MediatR");
+                    }
+
                     var query = new CheckUserPermissionQuery(
                         userId,
                         permissionAttribute.Resource,
@@ -193,13 +218,20 @@ internal sealed class PermissionAuthorizationMiddleware(
                     // Esto asegura que los behaviors (como TransactionBehavior) puedan resolver servicios scoped como ApiContext
                     var mediator = context.RequestServices.GetRequiredService<IMediator>();
                     var result = await mediator.Send(query);
-                    logger.LogDebug("CheckPermissionAsync: MediatR retornó resultado: {Result}", result);
+                    if (logger.IsEnabled(LogLevel.Debug))
+                    {
+                        logger.LogDebug("CheckPermissionAsync: MediatR retornó resultado: {Result}", result);
+                    }
+
                     return result;
                 },
                 fallbackValue: false
             );
 
-            logger.LogDebug("CheckPermissionAsync: Resultado final de verificación de permiso: {HasPermission}", hasPermission);
+            if (logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.LogDebug("CheckPermissionAsync: Resultado final de verificación de permiso: {HasPermission}", hasPermission);
+            }
 
             stopwatch.Stop();
 

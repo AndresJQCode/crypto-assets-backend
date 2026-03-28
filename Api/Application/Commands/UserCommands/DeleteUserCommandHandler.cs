@@ -6,6 +6,7 @@ using Domain.SeedWork;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Api.Application.Commands.UserCommands;
 
@@ -77,7 +78,11 @@ internal sealed class DeleteUserCommandHandler(
                 reason: request.Reason,
                 entitySnapshot: userSnapshot);
 
-            logger.LogInformation("Usuario con ID {UserId} eliminado exitosamente", request.Id);
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation("Usuario con ID {UserId} eliminado exitosamente", request.Id);
+            }
+
             return true;
         }
         catch (Exception ex) when (!(ex is NotFoundException || ex is InvalidOperationException || ex is SaveEntitiesException))

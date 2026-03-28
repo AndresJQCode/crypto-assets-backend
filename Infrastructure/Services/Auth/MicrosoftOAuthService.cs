@@ -42,8 +42,11 @@ public class MicrosoftOAuthService(
                 throw new InvalidOperationException("Configuración de Microsoft OAuth incompleta");
             }
 
-            logger.LogInformation("Intercambiando código por token. TenantId: {TenantId}, ClientId: {ClientId}",
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation("Intercambiando código por token. TenantId: {TenantId}, ClientId: {ClientId}",
                     microsoftSettings.TenantId, microsoftSettings.ClientId);
+            }
 
             using var requestBody = new FormUrlEncodedContent(new[]
             {
@@ -56,7 +59,10 @@ public class MicrosoftOAuthService(
                         });
 
             var tokenEndpoint = new Uri($"https://login.microsoftonline.com/{microsoftSettings.TenantId}/oauth2/v2.0/token");
-            logger.LogInformation("Enviando solicitud a: {TokenEndpoint}", tokenEndpoint);
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation("Enviando solicitud a: {TokenEndpoint}", tokenEndpoint);
+            }
 
             var response = await httpClient.PostAsync(tokenEndpoint, requestBody);
 
@@ -100,7 +106,10 @@ public class MicrosoftOAuthService(
                 throw new InvalidOperationException("No se pudo deserializar la respuesta del token de Microsoft");
             }
 
-            logger.LogInformation("Token intercambiado exitosamente");
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation("Token intercambiado exitosamente");
+            }
 
             // Métrica de Prometheus: exchange exitoso de Microsoft
             InfrastructureMetrics.AuthenticationAttemptsTotal
@@ -138,7 +147,10 @@ public class MicrosoftOAuthService(
             httpClient.DefaultRequestHeaders.Authorization =
                     new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
 
-            logger.LogInformation("Obteniendo información del usuario de Microsoft Graph");
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation("Obteniendo información del usuario de Microsoft Graph");
+            }
 
             var response = await httpClient.GetAsync(new Uri("https://graph.microsoft.com/v1.0/me"));
 
@@ -174,7 +186,10 @@ public class MicrosoftOAuthService(
                 throw new InvalidOperationException("No se pudo deserializar la información del usuario de Microsoft");
             }
 
-            logger.LogInformation("Información del usuario obtenida exitosamente para: {UserPrincipalName}", userInfo.UserPrincipalName);
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation("Información del usuario obtenida exitosamente para: {UserPrincipalName}", userInfo.UserPrincipalName);
+            }
 
             // Métrica de Prometheus: info de usuario obtenida exitosamente
             InfrastructureMetrics.AuthenticationAttemptsTotal

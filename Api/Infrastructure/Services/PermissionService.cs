@@ -3,6 +3,7 @@ using Api.Application.Queries.PermissionQueries;
 using Domain.AggregatesModel.PermissionAggregate;
 using Infrastructure.Services;
 using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace Api.Infrastructure.Services;
 
@@ -14,7 +15,11 @@ internal sealed class PermissionService(IMediator mediator, IPermissionRepositor
         bool hasPermission = await cacheService.HasPermissionAsync(userId, resource, action);
         if (hasPermission)
         {
-            logger.LogDebug("Permission {Resource}.{Action} found in cache for user {UserId}", resource, action, userId);
+            if (logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.LogDebug("Permission {Resource}.{Action} found in cache for user {UserId}", resource, action, userId);
+            }
+
             return true;
         }
 
@@ -37,7 +42,11 @@ internal sealed class PermissionService(IMediator mediator, IPermissionRepositor
         IEnumerable<string>? cachedPermissions = await cacheService.GetUserPermissionsAsync(userId);
         if (cachedPermissions.Any())
         {
-            logger.LogDebug("User permissions found in cache for user {UserId}", userId);
+            if (logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.LogDebug("User permissions found in cache for user {UserId}", userId);
+            }
+
             return cachedPermissions;
         }
 
@@ -74,12 +83,18 @@ internal sealed class PermissionService(IMediator mediator, IPermissionRepositor
     public async Task InvalidateUserCacheAsync(Guid userId)
     {
         await cacheService.InvalidateUserCacheAsync(userId);
-        logger.LogDebug("Invalidated cache for user {UserId}", userId);
+        if (logger.IsEnabled(LogLevel.Debug))
+        {
+            logger.LogDebug("Invalidated cache for user {UserId}", userId);
+        }
     }
 
     public async Task InvalidateAllCacheAsync()
     {
         await cacheService.InvalidateAllCacheAsync();
-        logger.LogInformation("Invalidated all permission cache");
+        if (logger.IsEnabled(LogLevel.Information))
+        {
+            logger.LogInformation("Invalidated all permission cache");
+        }
     }
 }

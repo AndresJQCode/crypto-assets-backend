@@ -33,9 +33,12 @@ public class Repository<T>(
             .WithLabels(operation, EntityName)
             .Observe(elapsed.TotalSeconds);
 
-        logger.LogDebug(
-            "Repository operation {Operation} on {EntityType} completed successfully in {ElapsedMs}ms",
-            operation, EntityName, elapsed.TotalMilliseconds);
+        if (logger.IsEnabled(LogLevel.Debug))
+        {
+            logger.LogDebug(
+                "Repository operation {Operation} on {EntityType} completed successfully in {ElapsedMs}ms",
+                operation, EntityName, elapsed.TotalMilliseconds);
+        }
     }
 
     private void RecordError(string operation, Exception exception)
@@ -60,9 +63,12 @@ public class Repository<T>(
         var stopwatch = Stopwatch.StartNew();
         try
         {
-            logger.LogDebug(
-                "Starting repository operation {Operation} on {EntityType}",
-                operation, EntityName);
+            if (logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.LogDebug(
+                    "Starting repository operation {Operation} on {EntityType}",
+                    operation, EntityName);
+            }
 
             var result = await action();
             stopwatch.Stop();
@@ -84,9 +90,12 @@ public class Repository<T>(
         var stopwatch = Stopwatch.StartNew();
         try
         {
-            logger.LogDebug(
-                "Starting repository operation {Operation} on {EntityType}",
-                operation, EntityName);
+            if (logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.LogDebug(
+                    "Starting repository operation {Operation} on {EntityType}",
+                    operation, EntityName);
+            }
 
             var result = action();
             stopwatch.Stop();
@@ -208,9 +217,12 @@ public class Repository<T>(
 
         return await ExecuteWithMetricsAsync(MetricsLabelsConstants.Database.Insert, async () =>
         {
-            logger.LogDebug(
-                "Creating entity {EntityType} with ID {EntityId}",
-                EntityName, entity.Id);
+            if (logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.LogDebug(
+                    "Creating entity {EntityType} with ID {EntityId}",
+                    EntityName, entity.Id);
+            }
 
             SetAuditFields(entity);
             await context.Set<T>().AddAsync(entity, cancellationToken);
@@ -227,9 +239,12 @@ public class Repository<T>(
 
         return await ExecuteWithMetricsAsync(MetricsLabelsConstants.Database.InsertRange, async () =>
         {
-            logger.LogDebug(
-                "Creating {Count} entities of type {EntityType}",
-                entities.Count, EntityName);
+            if (logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.LogDebug(
+                    "Creating {Count} entities of type {EntityType}",
+                    entities.Count, EntityName);
+            }
 
             var entitiesList = entities.ToList();
             SetAuditFields(entitiesList);
@@ -244,9 +259,12 @@ public class Repository<T>(
 
         return ExecuteWithMetrics(MetricsLabelsConstants.Database.Update, () =>
         {
-            logger.LogDebug(
-                "Updating entity {EntityType} with ID {EntityId}",
-                EntityName, entity.Id);
+            if (logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.LogDebug(
+                    "Updating entity {EntityType} with ID {EntityId}",
+                    EntityName, entity.Id);
+            }
 
             SetAuditFields(entity, isUpdate: true);
             context.Entry(entity).State = EntityState.Modified;
@@ -264,9 +282,12 @@ public class Repository<T>(
 
         ExecuteWithMetrics("update_range", () =>
         {
-            logger.LogDebug(
-                "Updating {Count} entities of type {EntityType}",
-                entities.Count, EntityName);
+            if (logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.LogDebug(
+                    "Updating {Count} entities of type {EntityType}",
+                    entities.Count, EntityName);
+            }
 
             var entitiesList = entities.ToList();
             SetAuditFields(entitiesList, isUpdate: true);
@@ -289,9 +310,12 @@ public class Repository<T>(
 
         return ExecuteWithMetrics(MetricsLabelsConstants.Database.Delete, () =>
         {
-            logger.LogDebug(
-                "Deleting entity {EntityType} with ID {EntityId}",
-                EntityName, entity.Id);
+            if (logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.LogDebug(
+                    "Deleting entity {EntityType} with ID {EntityId}",
+                    EntityName, entity.Id);
+            }
 
             var removedEntity = context.Set<T>().Remove(entity);
             return removedEntity != null;
@@ -322,17 +346,23 @@ public class Repository<T>(
 
         return await ExecuteWithMetricsAsync(MetricsLabelsConstants.Database.BulkDelete, async () =>
         {
-            logger.LogInformation(
-                "Executing bulk delete on {EntityType}",
-                EntityName);
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation(
+                    "Executing bulk delete on {EntityType}",
+                    EntityName);
+            }
 
             var affected = await GetQueryable()
                 .Where(predicate)
                 .ExecuteDeleteAsync(cancellationToken);
 
-            logger.LogInformation(
-                "Bulk delete on {EntityType} affected {AffectedRows} rows",
-                EntityName, affected);
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation(
+                    "Bulk delete on {EntityType} affected {AffectedRows} rows",
+                    EntityName, affected);
+            }
 
             return affected;
         });
@@ -374,9 +404,12 @@ public class Repository<T>(
 
         return await ExecuteWithMetricsAsync(MetricsLabelsConstants.Database.SpecificationSelect, async () =>
         {
-            logger.LogDebug(
-                "Executing specification {SpecificationType} on {EntityType}",
-                specification.GetType().Name, EntityName);
+            if (logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.LogDebug(
+                    "Executing specification {SpecificationType} on {EntityType}",
+                    specification.GetType().Name, EntityName);
+            }
 
             var query = ApplySpecification(specification);
 
@@ -405,9 +438,12 @@ public class Repository<T>(
 
         return await ExecuteWithMetricsAsync(MetricsLabelsConstants.Database.SpecificationSelectFirst, async () =>
         {
-            logger.LogDebug(
-                "Executing specification {SpecificationType} (first) on {EntityType}",
-                specification.GetType().Name, EntityName);
+            if (logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.LogDebug(
+                    "Executing specification {SpecificationType} (first) on {EntityType}",
+                    specification.GetType().Name, EntityName);
+            }
 
             var query = ApplySpecification(specification);
             return await query.FirstOrDefaultAsync(cancellationToken);
@@ -428,9 +464,12 @@ public class Repository<T>(
 
         return await ExecuteWithMetricsAsync(MetricsLabelsConstants.Database.SpecificationCount, async () =>
         {
-            logger.LogDebug(
-                "Counting with specification {SpecificationType} on {EntityType}",
-                specification.GetType().Name, EntityName);
+            if (logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.LogDebug(
+                    "Counting with specification {SpecificationType} on {EntityType}",
+                    specification.GetType().Name, EntityName);
+            }
 
             var query = ApplySpecification(specification);
             return await query.CountAsync(cancellationToken);
@@ -456,9 +495,12 @@ public class Repository<T>(
 
         return await ExecuteWithMetricsAsync(MetricsLabelsConstants.Database.SpecificationPaginated, async () =>
         {
-            logger.LogDebug(
-                "Executing paginated specification {SpecificationType} on {EntityType} (Page: {Page}, Size: {PageSize})",
-                specification.GetType().Name, EntityName, specification.Page, specification.PageSize);
+            if (logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.LogDebug(
+                    "Executing paginated specification {SpecificationType} on {EntityType} (Page: {Page}, Size: {PageSize})",
+                    specification.GetType().Name, EntityName, specification.Page, specification.PageSize);
+            }
 
             var query = ApplySpecification(specification);
 

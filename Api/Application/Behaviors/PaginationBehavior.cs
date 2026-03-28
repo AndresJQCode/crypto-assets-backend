@@ -2,6 +2,7 @@ using Api.Application.Dtos;
 using Api.Application.Queries;
 using Api.Utilities;
 using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace Api.Application.Behaviors;
 
@@ -29,18 +30,24 @@ public class PaginationBehavior<TRequest, TResponse>(
         var paginationParams = PaginationHelper.GetPaginationParametersFromQueryString(httpContextAccessor);
         paginatedQuery.PaginationParameters = paginationParams;
 
-        logger.LogDebug(
-            "Pagination parameters injected into {QueryType}: Page={Page}, Limit={Limit}",
-            typeof(TRequest).Name,
-            paginationParams.Page,
-            paginationParams.Limit);
+        if (logger.IsEnabled(LogLevel.Debug))
+        {
+            logger.LogDebug(
+                "Pagination parameters injected into {QueryType}: Page={Page}, Limit={Limit}",
+                typeof(TRequest).Name,
+                paginationParams.Page,
+                paginationParams.Limit);
+        }
 
         // Execute the query
         var response = await next(cancellationToken);
 
-        logger.LogDebug(
-            "Pagination query executed successfully for {QueryType}",
-            typeof(TRequest).Name);
+        if (logger.IsEnabled(LogLevel.Debug))
+        {
+            logger.LogDebug(
+                "Pagination query executed successfully for {QueryType}",
+                typeof(TRequest).Name);
+        }
 
         return response;
     }

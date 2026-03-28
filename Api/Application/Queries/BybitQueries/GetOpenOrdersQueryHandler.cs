@@ -49,13 +49,20 @@ internal sealed class GetOpenOrdersQueryHandler(
         var cached = cacheService.Get<List<TradingOrderDto>>(cacheKey);
         if (cached != null)
         {
-            logger.LogDebug("Cache hit for Bybit open orders. ConnectorId: {ConnectorId}, Symbol: {Symbol}",
-                connector.Id, request.Symbol ?? "all");
+            if (logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.LogDebug("Cache hit for Bybit open orders. ConnectorId: {ConnectorId}, Symbol: {Symbol}",
+                    connector.Id, request.Symbol ?? "all");
+            }
+
             return cached;
         }
 
-        logger.LogInformation("Fetching open orders from Bybit. ConnectorId: {ConnectorId}, Symbol: {Symbol}",
-            connector.Id, request.Symbol ?? "all");
+        if (logger.IsEnabled(LogLevel.Information))
+        {
+            logger.LogInformation("Fetching open orders from Bybit. ConnectorId: {ConnectorId}, Symbol: {Symbol}",
+                connector.Id, request.Symbol ?? "all");
+        }
 
         // 3. Decrypt credentials
         var apiKey = await encryptionService.DecryptAsync(connector.AccessToken!);
@@ -122,8 +129,11 @@ internal sealed class GetOpenOrdersQueryHandler(
 
         await orderRepo.UnitOfWork.SaveEntitiesAsync(cancellationToken);
 
-        logger.LogInformation("Successfully synced {Count} orders from Bybit to database. ConnectorId: {ConnectorId}",
-            ordersFromApi.Count, connector.Id);
+        if (logger.IsEnabled(LogLevel.Information))
+        {
+            logger.LogInformation("Successfully synced {Count} orders from Bybit to database. ConnectorId: {ConnectorId}",
+                ordersFromApi.Count, connector.Id);
+        }
 
         // 6. Map to DTOs
         var result = ordersFromApi.Select(o => new TradingOrderDto

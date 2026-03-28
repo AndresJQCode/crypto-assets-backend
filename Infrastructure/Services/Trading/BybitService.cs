@@ -29,7 +29,10 @@ public class BybitService(ILogger<BybitService> logger) : IBybitService
 
         try
         {
-            logger.LogInformation("Validating Bybit API credentials. Testnet: {IsTestnet}", isTestnet);
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation("Validating Bybit API credentials. Testnet: {IsTestnet}", isTestnet);
+            }
 
             using var client = CreateClient(apiKey, apiSecret, isTestnet);
 
@@ -37,7 +40,11 @@ public class BybitService(ILogger<BybitService> logger) : IBybitService
 
             if (result.Success)
             {
-                logger.LogInformation("Bybit API credentials validated successfully");
+                if (logger.IsEnabled(LogLevel.Information))
+                {
+                    logger.LogInformation("Bybit API credentials validated successfully");
+                }
+
                 InfrastructureMetrics.BybitApiCallsTotal.WithLabels(ValidateCredentialsEndpoint, "success").Inc();
                 InfrastructureMetrics.BybitApiCallDuration.WithLabels(ValidateCredentialsEndpoint).Observe(stopwatch.Elapsed.TotalSeconds);
                 return true;
@@ -66,8 +73,11 @@ public class BybitService(ILogger<BybitService> logger) : IBybitService
 
         try
         {
-            logger.LogInformation("Fetching open orders from Bybit. Symbol: {Symbol}, Testnet: {IsTestnet}",
-                symbol ?? "all", isTestnet);
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation("Fetching open orders from Bybit. Symbol: {Symbol}, Testnet: {IsTestnet}",
+                    symbol ?? "all", isTestnet);
+            }
 
             using var client = CreateClient(apiKey, apiSecret, isTestnet);
 
@@ -99,7 +109,11 @@ public class BybitService(ILogger<BybitService> logger) : IBybitService
                 .Select(MapToBybitOrderDto)
                 .ToList();
 
-            logger.LogInformation("Successfully fetched {Count} open orders from Bybit", orders.Count);
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation("Successfully fetched {Count} open orders from Bybit", orders.Count);
+            }
+
             InfrastructureMetrics.BybitApiCallsTotal.WithLabels(OpenOrdersEndpoint, "success").Inc();
             InfrastructureMetrics.BybitApiCallDuration.WithLabels(OpenOrdersEndpoint).Observe(stopwatch.Elapsed.TotalSeconds);
 
@@ -136,9 +150,12 @@ public class BybitService(ILogger<BybitService> logger) : IBybitService
 
         try
         {
-            logger.LogInformation(
-                "Fetching order history from Bybit. Symbol: {Symbol}, StartTime: {StartTime}, EndTime: {EndTime}, Testnet: {IsTestnet}",
-                symbol ?? "all", startTime, endTime, isTestnet);
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation(
+                    "Fetching order history from Bybit. Symbol: {Symbol}, StartTime: {StartTime}, EndTime: {EndTime}, Testnet: {IsTestnet}",
+                    symbol ?? "all", startTime, endTime, isTestnet);
+            }
 
             using var client = CreateClient(apiKey, apiSecret, isTestnet);
 
@@ -170,7 +187,11 @@ public class BybitService(ILogger<BybitService> logger) : IBybitService
                 .Select(MapToBybitOrderDto)
                 .ToList();
 
-            logger.LogInformation("Successfully fetched {Count} historical orders from Bybit", orders.Count);
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation("Successfully fetched {Count} historical orders from Bybit", orders.Count);
+            }
+
             InfrastructureMetrics.BybitApiCallsTotal.WithLabels(OrderHistoryEndpoint, "success").Inc();
             InfrastructureMetrics.BybitApiCallDuration.WithLabels(OrderHistoryEndpoint).Observe(stopwatch.Elapsed.TotalSeconds);
 

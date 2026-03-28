@@ -58,7 +58,7 @@ public class PermissionCacheService(
                     .WithLabels(MetricsLabelsConstants.Cache.Get, MetricsLabelsConstants.Cache.PermissionCache)
                     .Observe(stopwatch.Elapsed.TotalSeconds);
 
-                if (Options.EnableDetailedLogging)
+                if (Options.EnableDetailedLogging && logger.IsEnabled(LogLevel.Debug))
                 {
                     logger.LogDebug("Cache hit for user {UserId} permissions", userId);
                 }
@@ -76,7 +76,7 @@ public class PermissionCacheService(
                 .WithLabels("get", "permission_cache")
                 .Observe(stopwatch.Elapsed.TotalSeconds);
 
-            if (Options.EnableDetailedLogging)
+            if (Options.EnableDetailedLogging && logger.IsEnabled(LogLevel.Debug))
             {
                 logger.LogDebug("Cache miss for user {UserId} permissions", userId);
             }
@@ -110,7 +110,7 @@ public class PermissionCacheService(
                     .WithLabels(MetricsLabelsConstants.Cache.PermissionCache, MetricsLabelsConstants.Cache.UserPermissions)
                     .Inc();
 
-                if (Options.EnableDetailedLogging)
+                if (Options.EnableDetailedLogging && logger.IsEnabled(LogLevel.Debug))
                 {
                     logger.LogDebug("Cache hit for user {UserId} permissions", userId);
                 }
@@ -122,7 +122,7 @@ public class PermissionCacheService(
                 .WithLabels("permission_cache", "user_permissions")
                 .Inc();
 
-            if (Options.EnableDetailedLogging)
+            if (Options.EnableDetailedLogging && logger.IsEnabled(LogLevel.Debug))
             {
                 logger.LogDebug("Cache miss for user {UserId} permissions", userId);
             }
@@ -170,7 +170,7 @@ public class PermissionCacheService(
                     {
                         EvictionCallback = (key, value, reason, state) =>
                         {
-                            if (Options.EnableDetailedLogging)
+                            if (Options.EnableDetailedLogging && logger.IsEnabled(LogLevel.Debug))
                             {
                                 logger.LogDebug("Permission cache evicted for user {UserId}, reason: {Reason}",
                                     userId, reason);
@@ -182,7 +182,7 @@ public class PermissionCacheService(
 
             cache.Set(userPermissionsKey, permissionsList, cacheOptions);
 
-            if (Options.EnableDetailedLogging)
+            if (Options.EnableDetailedLogging && logger.IsEnabled(LogLevel.Debug))
             {
                 logger.LogDebug("Cached {Count} permissions for user {UserId}", permissionsList.Count, userId);
             }
@@ -210,7 +210,7 @@ public class PermissionCacheService(
             var userPermissionsKey = GetUserPermissionsKey(userId);
             cache.Remove(userPermissionsKey);
 
-            if (Options.EnableDetailedLogging)
+            if (Options.EnableDetailedLogging && logger.IsEnabled(LogLevel.Debug))
             {
                 logger.LogDebug("Invalidated cache for user {UserId}", userId);
             }
@@ -231,7 +231,10 @@ public class PermissionCacheService(
             if (cache is MemoryCache memoryCache)
             {
                 memoryCache.Compact(1.0); // Remove all entries
-                logger.LogInformation("Invalidated all permission cache");
+                if (logger.IsEnabled(LogLevel.Information))
+                {
+                    logger.LogInformation("Invalidated all permission cache");
+                }
             }
             else
             {

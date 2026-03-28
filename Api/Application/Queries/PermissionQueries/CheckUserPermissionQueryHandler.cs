@@ -1,6 +1,7 @@
 using Api.Application.Services;
 using Infrastructure.Services;
 using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace Api.Application.Queries.PermissionQueries;
 
@@ -11,15 +12,21 @@ internal sealed class CheckUserPermissionQueryHandler(
 {
     public async Task<bool> Handle(CheckUserPermissionQuery request, CancellationToken cancellationToken)
     {
-        logger.LogInformation("CheckUserPermissionQueryHandler: Iniciando verificación de permiso para usuario {UserId}, recurso: {Resource}, acción: {Action}",
-            request.UserId, request.Resource, request.Action);
+        if (logger.IsEnabled(LogLevel.Information))
+        {
+            logger.LogInformation("CheckUserPermissionQueryHandler: Iniciando verificación de permiso para usuario {UserId}, recurso: {Resource}, acción: {Action}",
+                request.UserId, request.Resource, request.Action);
+        }
 
         try
         {
             // Intentar obtener el resultado del caché primero
             var cachedResult = await permissionCacheService.HasPermissionAsync(request.UserId, request.Resource, request.Action);
 
-            logger.LogDebug("CheckUserPermissionQueryHandler: Resultado del caché: {CachedResult}", cachedResult);
+            if (logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.LogDebug("CheckUserPermissionQueryHandler: Resultado del caché: {CachedResult}", cachedResult);
+            }
 
             // Si el caché tiene datos, devolver el resultado
             if (cachedResult)

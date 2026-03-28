@@ -29,14 +29,22 @@ public class CacheService : ICacheService
                 stopwatch.Stop();
                 InfrastructureMetrics.CacheHitsTotal.WithLabels(MetricsLabelsConstants.Cache.Memory, typeof(T).Name).Inc();
                 InfrastructureMetrics.CacheOperationDuration.WithLabels(MetricsLabelsConstants.Cache.Get, MetricsLabelsConstants.Cache.Memory).Observe(stopwatch.Elapsed.TotalSeconds);
-                _logger.LogDebug("Cache hit for key: {Key}", key);
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug("Cache hit for key: {Key}", key);
+                }
+
                 return value;
             }
 
             stopwatch.Stop();
             InfrastructureMetrics.CacheMissesTotal.WithLabels(MetricsLabelsConstants.Cache.Memory, typeof(T).Name).Inc();
             InfrastructureMetrics.CacheOperationDuration.WithLabels("get", "memory").Observe(stopwatch.Elapsed.TotalSeconds);
-            _logger.LogDebug("Cache miss for key: {Key}", key);
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("Cache miss for key: {Key}", key);
+            }
+
             return default;
         }
         catch (Exception ex)
@@ -62,7 +70,10 @@ public class CacheService : ICacheService
             _cache.Set(key, value, cacheOptions);
             stopwatch.Stop();
             InfrastructureMetrics.CacheOperationDuration.WithLabels(MetricsLabelsConstants.Cache.Set, MetricsLabelsConstants.Cache.Memory).Observe(stopwatch.Elapsed.TotalSeconds);
-            _logger.LogDebug("Cached value for key: {Key} with expiration: {Expiration}", key, expiration ?? _defaultExpiration);
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("Cached value for key: {Key} with expiration: {Expiration}", key, expiration ?? _defaultExpiration);
+            }
         }
         catch (Exception ex)
         {
@@ -79,7 +90,10 @@ public class CacheService : ICacheService
             _cache.Remove(key);
             stopwatch.Stop();
             InfrastructureMetrics.CacheOperationDuration.WithLabels(MetricsLabelsConstants.Cache.Remove, MetricsLabelsConstants.Cache.Memory).Observe(stopwatch.Elapsed.TotalSeconds);
-            _logger.LogDebug("Removed cache entry for key: {Key}", key);
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("Removed cache entry for key: {Key}", key);
+            }
         }
         catch (Exception ex)
         {
