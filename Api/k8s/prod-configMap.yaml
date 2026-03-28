@@ -1,0 +1,185 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-template-config
+  namespace: prod-backend-template
+data:
+  appsettings.json: |-
+    {
+      "CompanyName": "QCode",
+      "ApplicationName": "backend-template-backend",
+      "Serilog": {
+        "MinimumLevel": {
+          "Default": "Verbose",
+          "Override": {
+            "Microsoft": "Information",
+            "System": "Information",
+            "Microsoft.EntityFrameworkCore.Database.Command": "Warning",
+            "Microsoft.EntityFrameworkCore.Query": "Warning"
+          }
+        },
+        "WriteTo": [
+          {
+            "Name": "Console",
+            "Args": {
+              "outputTemplate": "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}",
+              "theme": "Serilog.Sinks.SystemConsole.Themes.AnsiConsoleTheme::Code, Serilog.Sinks.Console"
+            }
+          },
+          {
+            "Name": "Debug"
+          },
+          {
+            "Name": "GrafanaLoki",
+            "Args": {
+              "uri": "#{GrafanaLoki.Args.uri}#",
+              "labels": [
+                {
+                  "key": "app",
+                  "value": "backend-template-backend"
+                },
+                {
+                  "key": "environment",
+                  "value": "development"
+                }
+              ],
+              "propertiesAsLabels": [
+                "Application",
+                "Environment"
+              ],
+              "credentials": {
+                "login": "#{Serilog.GrafanaLoki.Credentials.Login}#",
+                "password": "#{Serilog.GrafanaLoki.Credentials.Password}#"
+              },
+              "outputTemplate": "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}",
+              "restrictedToMinimumLevel": "Error"
+            }
+          }
+        ],
+        "Enrich": [
+          "FromLogContext",
+          "WithExceptionDetails"
+        ]
+      },
+      "AllowedHosts": "*",
+      "Identity": {
+        "SecretKey": "#{Identity.SecretKey}#",
+        "Issuer": "qcode.co",
+        "Audience": "qcode.co"
+      },
+      "JwtSettings": {
+        "SecretKey": "#{JwtSettings.SecretKey}#",
+        "Issuer": "qcode.co",
+        "Audience": "qcode.co",
+        "ExpirationMinutes": "30",
+        "RefreshTokenExpirationDays": "10"
+      },
+      "Authentication": {
+        "AllowPublicUsers": false,
+        "Google": {
+          "ClientId": "#{Authentication.Google.ClientId}#",
+          "ClientSecret": "#{Authentication.Google.ClientSecret}#",
+          "RedirectUri": "#{Authentication.Google.RedirectUri}#",
+          "TimeoutSeconds": 30
+        },
+        "Microsoft": {
+          "ClientId": "#{Authentication.Microsoft.ClientId}#",
+          "ClientSecret": "#{Authentication.Microsoft.ClientSecret}#",
+          "RedirectUri": "#{Authentication.Microsoft.RedirectUri}#",
+          "TenantId": "#{Authentication.Microsoft.TenantId}#",
+          "TimeoutSeconds": 30
+        }
+      },
+      "OpenApi": {
+        "Document": {
+          "Description": "Plantilla de desarrollo",
+          "Title": "API backend-template",
+          "Version": "v1.0.0"
+        }
+      },
+      "ConnectionStrings": {
+        "DB": "#{ConnectionStrings.DB}#"
+      },
+      "ServiceBus": {
+        "ConnectionStrings": "#{ServiceBus.ConnectionStrings}#",
+        "TopicEBilling": "#{ServiceBus.TopicEBilling}#",
+        "SuscriptionEBilling": "#{ServiceBus.SuscriptionEBilling}#"
+      },
+      "FrontUrl": "#{FrontUrl}#",
+      "EmailService": {
+        "FromEmail": "kelly@mail.lulocrm.com",
+        "FromName": "Lulo",
+        "HeaderImage": "https://s3.us-east-2.amazonaws.com/qcode.co/lulo_chat/logo-2.png",
+        "TestEmailTo": "andres.jaramillo@qcode.co"
+      },
+      "Infobip": {
+        "BasePath": "https://xr98gg.api.infobip.com",
+        "ApiKey": "#{Infobip.ApiKey}#"
+      },
+      "PermissionMiddleware": {
+        "EnableAuditLogging": true,
+        "IncludeRequestDetails": true,
+        "PermissionTimeoutSeconds": 5,
+        "EnablePerformanceMetrics": false,
+        "ExcludedPaths": [
+          "/health",
+          "/metrics",
+          "/swagger",
+          "/scalar/v1"
+        ]
+      },
+      "RateLimiting": {
+        "Enabled": true,
+        "PermitLimit": 150,
+        "WindowSeconds": 60,
+        "AuthPermitLimit": 30,
+        "AuthWindowSeconds": 60,
+        "ExcludedPaths": [
+          "/health",
+          "/metrics",
+          "/swagger",
+          "/scalar/v1"
+        ]
+      },
+      "Recaptcha": {
+        "Enabled": true,
+        "SecretKey": "#{Recaptcha.SecretKey}#",
+        "SiteKey": "#{Recaptcha.SiteKey}#",
+        "VerificationUrl": "https://www.google.com/recaptcha/api/siteverify",
+        "MinimumScore": 0.5,
+        "TimeoutSeconds": 5,
+        "RequiredEndpoints": [
+          "/auth/login",
+          "/auth/register",
+          "/auth/forgotPassword"
+        ]
+      },
+      "PasswordReset": {
+        "Enabled": true,
+        "MinimumIntervalMinutes": 5,
+        "IncrementalIntervalsSeconds": [0, 30, 60, 300, 1800, 3600]
+      },
+      "Cors": {
+        "AllowedOrigins": [],
+        "AllowedMethods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+        "AllowedHeaders": ["Content-Type", "Authorization", "X-Requested-With", "X-Correlation-ID"],
+        "ExposedHeaders": ["X-Correlation-ID"],
+        "AllowCredentials": true,
+        "PreflightMaxAgeSeconds": 600
+      },
+      "MemoryCache": {
+        "SizeLimit": 10000,
+        "CompactionPercentage": 0.25,
+        "ExpirationScanFrequencySeconds": 60
+      },
+      "Pagination": {
+        "MaxPageSize": 100,
+        "DefaultPageSize": 10,
+        "MinPage": 1
+      },
+      "CircuitBreaker": {
+        "FailureThreshold": 6,
+        "BreakDurationSeconds": 30,
+        "TimeoutSeconds": 5
+      }
+    }

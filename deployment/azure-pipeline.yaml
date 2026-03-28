@@ -1,0 +1,93 @@
+trigger:
+- develop
+- qa
+- staging
+- release/*
+
+resources:
+  repositories:
+    - repository: templates
+      type: git
+      name: DevOps/code-pipeline-templates
+      ref: develop
+  pipelines:
+      - pipeline: tmpinfra
+        project: Devops
+        source: infraestructura-ci
+
+
+pool:
+  name: 'vm-pool-lpg-$(amb)'
+  vmImage: 'vm-luegopago-$(amb)-$(credit)'
+name: $(BuildId)_$(date:yyyy-MM-dd)
+
+stages:
+  - stage: build
+    jobs:
+    - template: NetCore/k8s/dnc-k8s-build.yml@templates
+      parameters:
+        BuildScriptNamedValues: true
+        DownloadHelpersArtifacts: true
+        RemoveAppsettings: true
+        CopyFiles: true
+        PruneBuildCache: false
+        buildAndPush: true
+        PublishBuildArtifacts: true
+        
+  - stage: deploy
+    jobs:
+    - template: NetCore/k8s/dnc-k8s-deploy.yml@templates
+      parameters:
+        ReplaceTokens: true
+        applyNamespace: true
+        applyDockerSecret: true
+        applyConfigmap: true
+        applyDeployment: true
+        applyService: true
+        CreateUpdateNamesvalue: false
+        useClusterAdmin: true
+
+variables: 
+  - ${{ if eq( variables['Build.SourceBranchName'], 'develop' ) }}:
+    - group: k8s-sts-n8-dev
+    - group: sts-dnc-back-ebilling-dev
+    - name: amb
+      value: dev
+    - name: credit
+      value: snx
+  - ${{ if eq( variables['Build.SourceBranchName'], 'qa' ) }}:
+    - group: k8s-sts-n8-qa
+    - group: sts-dnc-back-ebilling-qa
+    - name: amb
+      value: qa
+    - name: credit
+      value: pxu
+  - ${{ if eq( variables['Build.SourceBranchName'], 'staging' ) }}:
+    - group: k8s-sts-n8-stg
+    - group: sts-dnc-back-ebilling-stg
+    - name: amb
+      value: stg
+    - name: credit
+      value: pxu
+  - ${{ if contains(variables['Build.SourceBranch'], 'release') }}:
+    - group: k8s-sts-n8-prd
+    - group: sts-dnc-back-ebilling-prd
+    - name: amb
+      value: prd
+    - name: credit
+      value: pxu
+
+  - name: k8.serviceProduct
+    value: sts
+  - name: k8.SERVICE_TYPE
+    value: ClusterIP
+  - name: k8.path.dockersecret
+    value: $(agent.builddirectory)/tmpinfra/infraestructura/k8_definitions/docker.secret.yaml
+  - name: k8.path.namespace
+    value: $(agent.builddirectory)/tmpinfra/infraestructura/k8_definitions/namespace.yaml
+  - name: k8.path.deployment
+    value: $(agent.builddirectory)/tmpinfra/infraestructura/k8_definitions/withJson/deployment.yaml
+  - name: k8.path.services
+    value: $(agent.builddirectory)/tmpinfra/infraestructura/k8_definitions/service.internalLoadBalancer.yaml
+  - name: k8.path.configmap
+    value: Api/configmap.yml

@@ -1,0 +1,41 @@
+# Reglas para Cursor
+
+## Constructor Primario
+
+- Siempre usar constructor primario (primary constructor) en C# cuando sea posible
+- Preferir la sintaxis de constructor primario sobre constructores tradicionales
+- Aplicar esta regla especialmente en clases de dominio y entidades
+
+## Instrucciones generales
+
+- Usar principios de SOLID para la arquitectura de la aplicación.
+- Usar DDD para la arquitectura de la aplicación.
+- Usar MediatR para la comunicación entre capas.
+- Usar FluentValidation para la validación de datos.
+- Usar AutoMapper para la conversión de datos.
+- Usar Serilog para el logging.
+- Usar Microsoft.Extensions.Caching.Memory para la caché.
+- Usar Microsoft.Extensions.Logging para el logging.
+- Usar buenas prácticas de programación.
+
+## Reglas de documentación
+
+- Usar Markdown para la documentación.
+- Usar la sintaxis de Markdown para la documentación.
+- Agregar documentación en la carpeta docs.
+
+## Reglas de Api Endpoints
+
+- Usar siempre minimal api para los endpoints.
+
+## Reglas para las clases
+
+- Siempre usar csharp_style_namespace_declarations = file_scoped, ejemplo: Domain.AggregatesModel.UserAggregate;
+
+## Reglas para las validaciones
+
+- Usar FluentValidation para las validaciones.
+
+## Reglas para Entity Framework Core
+
+- No crear migraciones manualmente.

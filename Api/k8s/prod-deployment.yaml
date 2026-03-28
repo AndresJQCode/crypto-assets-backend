@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-template-backend
+  namespace: prod-backend-template
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend-template-backend
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: backend-template-backend
+      annotations:
+        force-recreate: "1" # Add or update this annotation to trigger a rolling update
+    spec:
+      imagePullSecrets:
+        - name: regcred
+      containers:
+        - name: admin
+          image: index.docker.io/qcodeco/backend-template-qcode-backend:TAG
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          volumeMounts:
+            - name: config-volume
+              mountPath: /app/config
+      volumes:
+        - name: config-volume
+          configMap:
+            name: backend-template-config

@@ -1,0 +1,108 @@
+trigger:
+  branches:
+    include:
+      - main
+      - test
+pool:
+  vmImage: "ubuntu-latest"
+
+resources:
+  - repo: self
+
+variables:
+  - name: tag
+    value: "$(Build.BuildId)"
+  - name: dockerHubUsername
+    value: "qcodeco"
+  - name: env
+    ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
+      value: 'prod'
+    ${{ elseif or(startsWith(variables['Build.SourceBranch'], 'refs/heads/test'), startsWith(variables['Build.SourceBranch'], 'refs/heads/release')) }}:
+      value: 'test'
+    ${{ else }}:
+      value: 'dev'
+  - group: Backend-${{ variables.env }}
+  - name: dockerHubRepo
+    value: ${{ variables.env }}-backend-template-backend
+  
+stages:
+  - stage: Build
+    displayName: Build image
+    jobs:
+      - job: Build
+        strategy:
+          maxParallel: 1
+        displayName: Build
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - script: |
+              rm $(Build.SourcesDirectory)/Api/appsettings.json
+            displayName: 'Remove existing appsettings.json'
+          - task: Docker@2
+            displayName: "Login to Docker Hub"
+            inputs:
+              command: "login"
+              containerRegistry: "dockerHubServiceConnection"
+          - task: Docker@2
+            displayName: Build and push image
+            inputs:
+              command: "buildAndPush"
+              repository: "$(dockerHubUsername)/$(dockerHubRepo)"
+              dockerfile: "$(Build.SourcesDirectory)/Dockerfile"
+              tags: |
+                $(tag)
+                latest
+          - task: Docker@2
+            displayName: "Logout from Docker Hub"
+            inputs:
+              command: "logout"
+              containerRegistry: "dockerHubServiceConnection"
+  - stage: Deploy
+    displayName: Deploy to Kubernetes
+    dependsOn: Build
+    jobs:
+      - job: Deploy
+        strategy:
+          maxParallel: 1
+        displayName: Deploy
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: qetza.replacetokens.replacetokens-task.replacetokens@5
+            displayName: 'Replace tokens'
+            inputs:
+              targetFiles: |
+                **/*.config
+                **/*.yml
+                **/*.yaml
+                **/*.json
+          - task: AzureKeyVault@2
+            inputs:
+              azureSubscription: "Suscripción de Azure 1(1abc9f42-af17-497c-ae01-242f7cf40ab2)"
+              KeyVaultName: "k1-kube-config"
+              SecretsFilter: "*"
+              RunAsPreJob: false
+          - task: AzureCLI@2
+            displayName: "Download kubeconfig from Azure Key Vault"
+            inputs:
+              azureSubscription: "Suscripción de Azure 1(1abc9f42-af17-497c-ae01-242f7cf40ab2)"
+              scriptType: "bash"
+              scriptLocation: "inlineScript"
+              inlineScript: |
+                az keyvault secret show --name kubeconfigsecret --vault-name k1-kube-config --query value -o tsv > kubeconfig.yaml
+          - script: |
+              sed -i 's|TAG|$(tag)|g' Api/k8s/${{ variables.env }}-deployment.yaml
+            displayName: "Replace TAG in Kubernetes deployment files"
+          - task: Kubernetes@1
+            displayName: "Apply appsettings.json"
+            inputs:
+              connectionType: "None"
+              command: "apply"
+              arguments: "--context k1-azure -f Api/k8s/${{ variables.env }}-configMap.yaml --kubeconfig=kubeconfig.yaml"
+          - task: Kubernetes@1
+            displayName: "Deploy to Kubernetes cluster"
+            inputs:
+              connectionType: "None"
+              command: "apply"
+              arguments: "--context k1-azure -f Api/k8s/${{ variables.env }}-deployment.yaml --kubeconfig=kubeconfig.yaml"

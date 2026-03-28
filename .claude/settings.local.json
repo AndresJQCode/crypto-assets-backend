@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tree:*)",
+      "Bash(xargs:*)",
+      "Bash(find:*)",
+      "Bash(dotnet build:*)",
+      "Bash(git commit:*)",
+      "Bash(dotnet list:*)",
+      "Bash(findstr:*)",
+      "WebSearch",
+      "Bash(dotnet ef migrations add:*)",
+      "Bash(Select-String -Pattern \"error\")",
+      "Bash(Select-Object -First 10)",
+      "Bash(git add:*)",
+      "Bash(git push:*)",
+      "Bash(dotnet clean:*)",
+      "Bash(dotnet ef database update:*)",
+      "Bash(dotnet ef migrations remove:*)",
+      "Bash(dotnet ef migrations:*)",
+      "Bash(dotnet add:*)",
+      "WebFetch(domain:bybit-exchange.github.io)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:www.nuget.org)",
+      "Bash(Select-String -Pattern \"error\" -Context 2)",
+      "Bash(dotnet restore:*)",
+      "Bash(dotnet remove:*)",
+      "WebFetch(domain:jkorf.github.io)",
+      "WebFetch(domain:raw.githubusercontent.com)"
+    ]
+  }
+}

@@ -1,0 +1,28 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: backend-template-backend
+  namespace: prod-backend-template
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "240"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "240"
+spec:
+  ingressClassName: "nginx"
+  tls:
+    - hosts:
+        - api-backend-template.qcode.co
+      secretName: backend-template-ingress-tls
+  rules:
+    - host: api-backend-template.qcode.co
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: backend-template-backend
+                port:
+                  number: 80
