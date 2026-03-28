@@ -1,7 +1,10 @@
+using System.Text.Json;
 using Domain.AggregatesModel.ConnectorInstanceAggregate;
+using Domain.AggregatesModel.ConnectorInstanceAggregate.Configurations;
 using Domain.AggregatesModel.TradingOrderAggregate;
 using Domain.Exceptions;
 using Domain.Interfaces;
+using MediatR;
 using Microsoft.Extensions.Logging;
 
 namespace Api.Application.Commands.BybitCommands;
@@ -31,7 +34,7 @@ public class SyncBybitHistoryCommandHandler(
         try
         {
             // 1. Get connector instance with credentials
-            var connector = await connectorRepo.GetByIdAsync(request.ConnectorInstanceId, cancellationToken)
+            var connector = await connectorRepo.GetById(request.ConnectorInstanceId, cancellationToken: cancellationToken)
                 ?? throw new NotFoundException($"Connector instance {request.ConnectorInstanceId} not found");
 
             if (connector.ProviderType != ConnectorProviderType.Bybit)
@@ -40,7 +43,7 @@ public class SyncBybitHistoryCommandHandler(
             if (!connector.IsEnabled)
                 throw new BadRequestException("Connector is disabled");
 
-            var config = connector.Configuration as BybitConfiguration
+            var config = JsonSerializer.Deserialize<BybitConfiguration>(connector.ConfigurationJson)
                 ?? throw new BadRequestException("Invalid Bybit configuration");
 
             logger.LogInformation(
@@ -115,7 +118,7 @@ public class SyncBybitHistoryCommandHandler(
                                     triggerPrice: orderDto.TriggerPrice
                                 );
 
-                                await orderRepo.AddAsync(newOrder, cancellationToken);
+                                await orderRepo.Create(newOrder, cancellationToken);
                                 newOrders++;
                             }
                             else
@@ -137,7 +140,7 @@ public class SyncBybitHistoryCommandHandler(
                         catch (Exception ex)
                         {
                             var errorMsg = $"Error processing order {orderDto.OrderId}: {ex.Message}";
-                            logger.LogError(ex, errorMsg);
+                            logger.LogError(ex, "Error processing order {OrderId}: {ErrorMessage}", orderDto.OrderId, ex.Message);
                             errors.Add(errorMsg);
                         }
                     }
@@ -151,7 +154,7 @@ public class SyncBybitHistoryCommandHandler(
                 catch (Exception ex)
                 {
                     var errorMsg = $"Error syncing chunk {currentStart} to {currentEnd}: {ex.Message}";
-                    logger.LogError(ex, errorMsg);
+                    logger.LogError(ex, "Error syncing chunk {StartDate} to {EndDate}: {ErrorMessage}", currentStart, currentEnd, ex.Message);
                     errors.Add(errorMsg);
                 }
 

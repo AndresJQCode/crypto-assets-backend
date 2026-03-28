@@ -1,3 +1,5 @@
+using MediatR;
+
 namespace Api.Application.Commands.BybitCommands;
 
 /// <summary>
