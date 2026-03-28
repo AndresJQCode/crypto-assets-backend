@@ -63,6 +63,32 @@ internal static class BybitApi
         .Produces(401)
         .Produces(404);
 
+        // POST /api/tenants/{tenantId}/bybit/sync-history
+        group.MapPost("/sync-history", async (
+            IMediator mediator,
+            SyncBybitHistoryRequest request,
+            CancellationToken ct) =>
+        {
+            var command = new SyncBybitHistoryCommand
+            {
+                ConnectorInstanceId = request.ConnectorInstanceId,
+                StartDate = request.StartDate,
+                EndDate = request.EndDate,
+                Symbol = request.Symbol
+            };
+
+            var result = await mediator.Send(command, ct);
+            return Results.Ok(result);
+        })
+        .WithName("SyncBybitHistory")
+        .WithSummary("Synchronize full trading history from Bybit")
+        .WithDescription("Fetches and stores complete trading history from Bybit into the database. Supports filtering by date range and trading pair. Process runs in chunks to avoid rate limits.")
+        .RequirePermission(PermissionResourcesConstants.ConnectorInstances, PermissionActionsConstants.Update)
+        .Produces<SyncBybitHistoryResult>()
+        .Produces(400)
+        .Produces(401)
+        .Produces(404);
+
         return group;
     }
 }
