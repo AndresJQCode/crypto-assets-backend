@@ -44,12 +44,7 @@ public class GoogleOAuthService(
                         });
 
             var response = await httpClient.PostAsync(new Uri("https://oauth2.googleapis.com/token"), requestBody);
-            // response.EnsureSuccessStatusCode();
-            if (!response.IsSuccessStatusCode)
-            {
-                logger.LogError("Error al intercambiar código por token con Google: {StatusCode}", response.StatusCode);
-                throw new HttpRequestException($"Error al intercambiar código por token con Google: {response.StatusCode}");
-            }
+            response.EnsureSuccessStatusCode();
 
             var jsonResponse = await response.Content.ReadAsStringAsync();
             var tokenResponse = JsonSerializer.Deserialize<GoogleTokenResponse>(jsonResponse, JsonOptions);

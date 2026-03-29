@@ -55,7 +55,6 @@ internal sealed class PermissionAuthorizationMiddleware(
             {
                 logger.LogInformation("PermissionAuthorizationMiddleware: Path {Path} está excluido, saltando verificación", context.Request.Path);
             }
-
             await next(context);
             return;
         }
@@ -82,7 +81,6 @@ internal sealed class PermissionAuthorizationMiddleware(
                 logger.LogInformation("PermissionAuthorizationMiddleware: Endpoint {EndpointDisplayName} no tiene RequirePermissionAttribute, saltando verificación. Metadata disponible: {MetadataCount}",
                     endpoint?.DisplayName, endpoint?.Metadata?.Count ?? 0);
             }
-
             await next(context);
             return;
         }
@@ -114,14 +112,17 @@ internal sealed class PermissionAuthorizationMiddleware(
             }
 
             // Log de acceso exitoso para auditoría
-            if (middlewareOptions.EnableAuditLogging && logger.IsEnabled(LogLevel.Information))
+            if (middlewareOptions.EnableAuditLogging)
             {
                 var requestDetails = middlewareOptions.IncludeRequestDetails
                     ? $" desde {context.Connection.RemoteIpAddress}"
                     : string.Empty;
 
-                logger.LogInformation("Acceso autorizado: Usuario {UserId} accedió a {Resource}.{Action} en {Endpoint}{RequestDetails}",
-                    authResult.UserId, permissionAttribute.Resource, permissionAttribute.Action, context.Request.Path, requestDetails);
+                if (logger.IsEnabled(LogLevel.Information))
+                {
+                    logger.LogInformation("Acceso autorizado: Usuario {UserId} accedió a {Resource}.{Action} en {Endpoint}{RequestDetails}",
+                        authResult.UserId, permissionAttribute.Resource, permissionAttribute.Action, context.Request.Path, requestDetails);
+                }
             }
 
             // Registrar métricas de Prometheus
@@ -208,7 +209,6 @@ internal sealed class PermissionAuthorizationMiddleware(
                     {
                         logger.LogDebug("------CheckPermissionAsync: Enviando CheckUserPermissionQuery a MediatR");
                     }
-
                     var query = new CheckUserPermissionQuery(
                         userId,
                         permissionAttribute.Resource,
@@ -222,7 +222,6 @@ internal sealed class PermissionAuthorizationMiddleware(
                     {
                         logger.LogDebug("CheckPermissionAsync: MediatR retornó resultado: {Result}", result);
                     }
-
                     return result;
                 },
                 fallbackValue: false

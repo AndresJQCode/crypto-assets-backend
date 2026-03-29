@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Api.Application.Dtos.Auth;
 using Api.Application.Services.Auth;
+using Api.Extensions;
 using Domain.AggregatesModel.AuditAggregate;
 using Domain.AggregatesModel.UserAggregate;
 using Domain.Exceptions;
@@ -20,7 +21,8 @@ internal sealed class LoginCommandHandler(
     IJwtTokenService jwtTokenService,
     IUserInfoService userInfoService,
     IRecaptchaService recaptchaService,
-    IOutOfTransactionAuditLogWriter auditLogWriter) : IRequestHandler<LoginCommand, LoginResponseDto>
+    IHttpContextAccessor httpContextAccessor,
+    ApiContext context) : IRequestHandler<LoginCommand, LoginResponseDto>
 {
     private AppSettings.RecaptchaSettings Recaptcha => appSettings.CurrentValue.Recaptcha;
 
@@ -29,7 +31,8 @@ internal sealed class LoginCommandHandler(
         // Validar reCAPTCHA si está habilitado
         if (Recaptcha.Enabled && Recaptcha.RequiresValidation("/auth/login"))
         {
-            var recaptchaResult = await recaptchaService.ValidateTokenAsync(recaptchaToken: request.RecaptchaToken ?? string.Empty, recaptchaAction: "LOGIN");
+            var remoteIp = httpContextAccessor.HttpContext?.GetClientIpAddress();
+            var recaptchaResult = await recaptchaService.ValidateTokenAsync(request.RecaptchaToken ?? string.Empty, remoteIp);
 
             if (!recaptchaResult.Success)
             {
@@ -37,29 +40,17 @@ internal sealed class LoginCommandHandler(
             }
         }
 
+        string authResult = "success";
+
         User? user = await userManager.FindByEmailAsync(request.Email);
 
-        // si el usuario no existe, se lanza una excepción y guarda log de auditoría (en scope independiente para que no se revierta)
-        if (user is null)
-        {
-            var auditLog = new AuditLog(
-                entityType: AppConstants.AuditEntityTypes.Authentication,
-                entityId: Guid.Empty,
-                action: AppConstants.AuditActions.LoginFailed,
-                userId: null,
-                userName: request.Email,
-                reason: "Intento de login fallido: user_not_found",
-                additionalData: JsonSerializer.Serialize(new { Email = request.Email })
-            );
-            await auditLogWriter.SaveAsync(auditLog, cancellationToken);
-            throw new BadRequestException("Credenciales inválidas");
-        }
+        // Por seguridad, siempre validar contraseña aunque el usuario no exista
+        // Esto evita revelar qué emails están registrados en el sistema
+        bool loginResult = user != null && await userManager.CheckPasswordAsync(user, request.Password);
 
-        bool loginResult = await userManager.CheckPasswordAsync(user, request.Password);
-
-        if (!loginResult || !user.IsActive)
+        if (!loginResult || user == null || !user.IsActive)
         {
-            string authResult = !loginResult ? "invalid_password" : "user_inactive";
+            authResult = user == null ? "user_not_found" : (!loginResult ? "invalid_password" : "user_inactive");
 
             // Registrar intento de login fallido
             InfrastructureMetrics.AuthenticationAttemptsTotal
@@ -67,29 +58,33 @@ internal sealed class LoginCommandHandler(
                 .Inc();
 
             // Registrar en auditoría
+            var remoteIp = httpContextAccessor.HttpContext?.GetClientIpAddress();
             var additionalData = JsonSerializer.Serialize(new
             {
                 Email = request.Email,
+                RemoteIpAddress = remoteIp,
                 Reason = authResult
             });
 
             var auditLog = new AuditLog(
                 entityType: AppConstants.AuditEntityTypes.Authentication,
-                entityId: user.Id,
+                entityId: user?.Id ?? Guid.Empty,
                 action: AppConstants.AuditActions.LoginFailed,
-                userId: user.Id,
-                userName: user.Email ?? request.Email,
+                userId: user?.Id,
+                userName: user?.Email ?? request.Email,
                 reason: $"Intento de login fallido: {authResult}",
                 additionalData: additionalData
             );
 
-            await auditLogWriter.SaveAsync(auditLog, cancellationToken);
+            context.AuditLogs.Add(auditLog);
+            await context.SaveEntitiesAsync(cancellationToken);
+
             throw new BadRequestException("Credenciales inválidas");
         }
 
         // Generar access token y refresh token usando el servicio JWT
-        string? accessToken = jwtTokenService.GenerateToken(user, AppConstants.Authentication.DefaultProvider);
-        string? refreshToken = jwtTokenService.GenerateRefreshToken(user);
+        var accessToken = jwtTokenService.GenerateToken(user, AppConstants.Authentication.DefaultProvider);
+        var refreshToken = jwtTokenService.GenerateRefreshToken(user);
 
         // Guardar tokens en el usuario
         IdentityResult resultSetAccessToken = await userManager.SetAuthenticationTokenAsync(user, AppConstants.Authentication.DefaultProvider, AppConstants.Authentication.AccessTokenName, accessToken);

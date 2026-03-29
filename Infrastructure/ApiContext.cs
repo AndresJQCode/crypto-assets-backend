@@ -1,29 +1,16 @@
-using System.Linq;
 using Domain.AggregatesModel.AuditAggregate;
-using Domain.AggregatesModel.ConnectorDefinitionAggregate;
-using Domain.AggregatesModel.ConnectorInstanceAggregate;
-using Domain.AggregatesModel.OrderAggregate;
 using Domain.AggregatesModel.PermissionAggregate;
-using Domain.AggregatesModel.PortfolioAggregate;
 using Domain.AggregatesModel.RoleAggregate;
-using Domain.AggregatesModel.SystemConfigurationAggregate;
-using Domain.AggregatesModel.TenantAggregate;
-using Domain.AggregatesModel.TradingOrderAggregate;
 using Domain.AggregatesModel.UserAggregate;
 using Domain.SeedWork;
-using Infrastructure.EntityConfigurations;
 using Infrastructure.EntityConfigurations.AuditConfigurations;
-using Infrastructure.EntityConfigurations.ConnectorDefinitionConfigurations;
-using Infrastructure.EntityConfigurations.ConnectorInstanceConfigurations;
-using Infrastructure.EntityConfigurations.OrderConfigurations;
 using Infrastructure.EntityConfigurations.PermissionConfigurations;
-using Infrastructure.EntityConfigurations.SystemConfigurationConfigurations;
-using Infrastructure.EntityConfigurations.TenantConfigurations;
-using Infrastructure.EntityConfigurations.TradingOrderConfigurations;
 using Infrastructure.EntityConfigurations.UserConfigurations;
+using MediatR;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
+using System.Linq;
 
 namespace Infrastructure;
 
@@ -34,7 +21,7 @@ public class ApiContext : IdentityDbContext<User, Role, Guid, UserClaim, UserRol
     private readonly IMediator _mediator;
     private IDbContextTransaction? _currentTransaction;
 
-    public ApiContext(DbContextOptions<ApiContext> options) : base(options)
+    public ApiContext(DbContextOptions<ApiContext> options) : base(options) 
     {
         _mediator = new NoMediator();
     }
@@ -46,32 +33,22 @@ public class ApiContext : IdentityDbContext<User, Role, Guid, UserClaim, UserRol
 
         System.Diagnostics.Debug.WriteLine("Context::ctor ->" + this.GetHashCode());
     }
-
+    
     public IDbContextTransaction? CurrentTransaction => _currentTransaction;
 
     public bool HasActiveTransaction => _currentTransaction != null;
 
 
-    public new DbSet<User> Users { get; set; } = null!;
-    public new DbSet<Role> Roles { get; set; } = null!;
-    public new DbSet<UserClaim> UserClaims { get; set; } = null!;
-    public new DbSet<UserRole> UserRoles { get; set; } = null!;
-    public new DbSet<UserLogin> UserLogins { get; set; } = null!;
-    public new DbSet<RoleClaim> RoleClaims { get; set; } = null!;
-    public new DbSet<UserToken> UserTokens { get; set; } = null!;
-    public DbSet<Permission> Permissions { get; set; } = null!;
-    public DbSet<PermissionRole> PermissionRoles { get; set; } = null!;
-    public DbSet<AuditLog> AuditLogs { get; set; } = null!;
-    public DbSet<Tenant> Tenants { get; set; } = null!;
-    public DbSet<ConnectorDefinition> ConnectorDefinitions { get; set; } = null!;
-    public DbSet<ConnectorInstance> ConnectorInstances { get; set; } = null!;
-    public DbSet<Order> Orders { get; set; } = null!;
-    public DbSet<OrderItem> OrderItems { get; set; } = null!;
-    public DbSet<OrderIntegrationEvent> OrderIntegrationEvents { get; set; } = null!;
-    public DbSet<TradingOrder> TradingOrders { get; set; } = null!;
-    public DbSet<SystemConfiguration> SystemConfigurations { get; set; } = null!;
-    public DbSet<Portfolio> Portfolios { get; set; } = null!;
-    public DbSet<PortfolioTransaction> PortfolioTransactions { get; set; } = null!;
+    public new DbSet<User> Users { get; set; }
+    public new DbSet<Role> Roles { get; set; }
+    public new DbSet<UserClaim> UserClaims { get; set; }
+    public new DbSet<UserRole> UserRoles { get; set; }
+    public new DbSet<UserLogin> UserLogins { get; set; }
+    public new DbSet<RoleClaim> RoleClaims { get; set; }
+    public new DbSet<UserToken> UserTokens { get; set; }
+    public DbSet<Permission> Permissions { get; set; }
+    public DbSet<PermissionRole> PermissionRoles { get; set; }
+    public DbSet<AuditLog> AuditLogs { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -90,19 +67,6 @@ public class ApiContext : IdentityDbContext<User, Role, Guid, UserClaim, UserRol
         builder.ApplyConfiguration(new PermissionConfiguration());
         builder.ApplyConfiguration(new PermissionRoleConfiguration());
         builder.ApplyConfiguration(new AuditLogConfiguration());
-        builder.ApplyConfiguration(new TenantConfiguration());
-        builder.ApplyConfiguration(new ConnectorDefinitionConfiguration());
-        builder.ApplyConfiguration(new ConnectorInstanceConfiguration());
-        builder.ApplyConfiguration(new OrderConfiguration());
-        builder.ApplyConfiguration(new OrderItemConfiguration());
-        builder.ApplyConfiguration(new OrderIntegrationEventConfiguration());
-        builder.ApplyConfiguration(new TradingOrderConfiguration());
-        builder.ApplyConfiguration(new SystemConfigurationConfiguration());
-        builder.ApplyConfiguration(new PortfolioEntityConfiguration());
-        builder.ApplyConfiguration(new PortfolioTransactionEntityConfiguration());
-
-        // Seed data
-        SystemConfigurationSeedData.SeedSystemConfigurations(builder);
     }
 
     public async Task<bool> SaveEntitiesAsync(CancellationToken cancellationToken = default)
@@ -133,7 +97,7 @@ public class ApiContext : IdentityDbContext<User, Role, Guid, UserClaim, UserRol
         return _currentTransaction;
     }
 
-    public async Task CommitTransactionAsync(IDbContextTransaction transaction)
+    public async System.Threading.Tasks.Task CommitTransactionAsync(IDbContextTransaction transaction)
     {
         ArgumentNullException.ThrowIfNull(transaction);
         if (transaction != _currentTransaction)
@@ -177,42 +141,44 @@ public class ApiContext : IdentityDbContext<User, Role, Guid, UserClaim, UserRol
 }
 
 internal sealed class NoMediator : IMediator
-{
-    public IAsyncEnumerable<TResponse> CreateStream<TResponse>(IStreamRequest<TResponse> request, CancellationToken cancellationToken = default)
     {
-        return AsyncEnumerable.Empty<TResponse>();
-    }
+        public async IAsyncEnumerable<TResponse> CreateStream<TResponse>(IStreamRequest<TResponse> request, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            yield break;
+        }
 
-    public IAsyncEnumerable<object> CreateStream(object request, CancellationToken cancellationToken = default)
-    {
-        return AsyncEnumerable.Empty<object>();
-    }
+        public async IAsyncEnumerable<object> CreateStream(object request, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            yield break;
+        }
 
-    public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default) where TNotification : INotification
-    {
-        return Task.CompletedTask;
-    }
+        public System.Threading.Tasks.Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default) where TNotification : INotification
+        {
+            return System.Threading.Tasks.Task.CompletedTask;
+        }
 
-    public Task Publish(object notification, CancellationToken cancellationToken = default)
-    {
-        return Task.CompletedTask;
-    }
+        public System.Threading.Tasks.Task Publish(object notification, CancellationToken cancellationToken = default)
+        {
+            return System.Threading.Tasks.Task.CompletedTask;
+        }
 
-    public Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
-    {
-        return Task.FromResult<TResponse>(default!);
-    }
+        public System.Threading.Tasks.Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
+        {
+#pragma warning disable CS8604 // Posible argumento de referencia nulo
+            return System.Threading.Tasks.Task.FromResult<TResponse>(default);
+#pragma warning restore CS8604 // Posible argumento de referencia nulo
+        }
 
-    public Task<object?> Send(object request, CancellationToken cancellationToken = default)
-    {
-        return Task.FromResult(default(object?));
-    }
+        public System.Threading.Tasks.Task<object?> Send(object request, CancellationToken cancellationToken = default)
+        {
+            return System.Threading.Tasks.Task.FromResult(default(object));
+        }
 
-    public Task Send<TRequest>(TRequest request, CancellationToken cancellationToken = default) where TRequest : IRequest
-    {
-        return Task.CompletedTask;
+        public System.Threading.Tasks.Task Send<TRequest>(TRequest request, CancellationToken cancellationToken = default) where TRequest : IRequest
+        {
+            return System.Threading.Tasks.Task.CompletedTask;
+        }
     }
-}
 
 public class ContextDesignFactory : IDesignTimeDbContextFactory<ApiContext>
 {

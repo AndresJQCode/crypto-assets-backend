@@ -2,14 +2,8 @@ using System.Reflection;
 using Api.Application.Services;
 using Api.Infrastructure.HealthChecks;
 using Api.Infrastructure.Services;
-using Domain.AggregatesModel.AuditAggregate;
-using Domain.AggregatesModel.OrderAggregate;
 using Domain.AggregatesModel.PermissionAggregate;
-using Domain.AggregatesModel.PortfolioAggregate;
-using Domain.AggregatesModel.TenantAggregate;
-using Domain.AggregatesModel.UserAggregate;
 using Domain.Interfaces;
-using Domain.SeedWork;
 using FluentValidation;
 using Infrastructure;
 using Infrastructure.Repositories;
@@ -84,19 +78,6 @@ internal static class Extensions
             options.EnableThreadSafetyChecks();
         });
 
-        // Registrar repositorio genérico abierto para cualquier aggregate root
-        // NOTA: NO registrar IUnitOfWork directamente - usar repository.UnitOfWork en los handlers
-        services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
-
-        // Registrar repositorios específicos con métodos adicionales
-        services.AddScoped<IAuditLogRepository, AuditLogRepository>();
-        services.AddScoped<IClientIpProvider, ClientIpProvider>();
-        services.AddScoped<IOutOfTransactionAuditLogWriter, OutOfTransactionAuditLogWriter>();
-        services.AddScoped<IOrderRepository, OrderRepository>();
-        services.AddScoped<ITenantRepository, TenantRepository>();
-        services.AddScoped<IUserRoleRepository, UserRoleRepository>();
-        services.AddScoped<IPortfolioRepository, PortfolioRepository>();
-
         return services;
     }
 
@@ -111,10 +92,10 @@ internal static class Extensions
     {
         services.Configure<AppSettings>(configuration);
 
-        // Registrar validadores de configuración
+        // Registrar validador de configuración JWT
         // ValidateOnStart() garantiza que la validación se ejecute al iniciar la aplicación
+        // La aplicación fallará inmediatamente si la configuración JWT es inválida
         services.AddSingleton<IValidateOptions<AppSettings>, JwtConfigurationValidator>();
-        services.AddSingleton<IValidateOptions<AppSettings>, RecaptchaOptionsValidator>();
         services.AddOptions<AppSettings>().ValidateOnStart();
 
         // ApiBehaviorOptions no es necesario para Minimal APIs

@@ -1,26 +1,16 @@
-using Api.Apis.Admin.DashboardEndpoints;
-using Api.Apis.Admin.SystemConfigurationEndpoints;
 using Api.Apis.AuthEndpoints;
-using Api.Apis.BybitEndpoints;
-using Api.Apis.ConnectorDefinitionsEndpoints;
-using Api.Apis.ConnectorInstancesEndpoints;
 using Api.Apis.DashboardEndpoints;
 using Api.Apis.PermissionRolesEndpoints;
 using Api.Apis.PermissionsEndpoints;
-using Api.Apis.Portfolio;
 using Api.Apis.RolesEndpoints;
-using Api.Apis.TenantsEndpoints;
-using Api.Apis.TradingOrder;
 using Api.Apis.UsersEndpoints;
 using Api.Application.Behaviors;
 using Api.Extensions;
 using Api.Infrastructure.Services;
-using Api.Middlewares;
 using Domain.AggregatesModel.RoleAggregate;
 using Domain.AggregatesModel.UserAggregate;
 using Domain.Interfaces;
 using Infrastructure;
-// using Infrastructure.BackgroundServices; // TODO: Incomplete implementation
 using Infrastructure.EntityConfigurations;
 using Infrastructure.Services.Email;
 using Microsoft.AspNetCore.Identity;
@@ -34,8 +24,9 @@ builder.Configuration
     .AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true)
     .AddEnvironmentVariables();
 
-// Configurar servicios de email con patrón Strategy
-builder.Services.AddEmailServices(builder.Configuration);
+// Configurar servicios de email
+builder.Services.AddTransient<IEmailSender<User>, InfobipEmailSender<User>>();
+builder.Services.AddTransient<IEmailTemplateService, SimpleEmailTemplateService>();
 
 builder.Services.AddIdentity<User, Role>()
     .AddEntityFrameworkStores<ApiContext>()
@@ -64,14 +55,12 @@ builder.Services.AddFluentValidation();
 builder.Services.AddPermissionModule();
 builder.Services.AddPermissionMiddleware();
 builder.Services.AddAuthServices(builder.Configuration);
-builder.Services.AddConnectorServices(builder.Configuration);
 builder.Services.AddRateLimitingServices(builder.Configuration);
 builder.Services.AddRecaptchaServices(builder.Configuration);
 RepositoryExtensions.AddRepositories(builder.Services);
 
 // Agregar Prometheus
 builder.Services.AddPrometheusMetrics(builder.Configuration);
-
 
 // Configurar CORS con opciones tipadas
 var corsSettings = builder.Configuration.GetSection("Cors").Get<AppSettings.CorsSettings>() ?? new AppSettings.CorsSettings();
@@ -131,7 +120,6 @@ builder.Services.AddMediatR(cfg =>
 
     cfg.AddOpenBehavior(typeof(LoggingBehavior<,>));
     cfg.AddOpenBehavior(typeof(ValidatorBehavior<,>));
-    cfg.AddOpenBehavior(typeof(PaginationBehavior<,>));
     cfg.AddOpenBehavior(typeof(TransactionBehavior<,>));
 });
 
@@ -155,43 +143,15 @@ app.UsePrometheusMetrics(app.Environment);
 // Rate Limiting (debe ir antes de los middlewares de autorización)
 app.UseRateLimiting();
 
-// Tenant Context Middleware (must run before permission checks)
-app.UseTenantContext();
-
 // Middleware de autorización por permisos
 app.UsePermissionAuthorization();
 
-// ============================================
-// ADMIN ENDPOINTS - SuperAdmin only (/admin/*)
-// ============================================
-var adminGroup = app.MapAdminGroup();
-adminGroup.MapAdminDashboardEndpoints();
-adminGroup.MapSystemConfigurationEndpoints();
-adminGroup.MapConnectorDefinitionsEndpoints();
-adminGroup.MapTenantsEndpoints();
-adminGroup.MapPermissionsEndpoints();
-
-// ============================================
-// TENANT ENDPOINTS - Tenant users (/*)
-// ============================================
-var tenantGroup = app.MapTenantGroup();
-tenantGroup.MapDashboardEndpoints();
-tenantGroup.MapUsersEndpoints();
-tenantGroup.MapRolesEndpoints();
-tenantGroup.MapConnectorInstancesEndpoints();
-tenantGroup.MapBybitEndpoints();
-tenantGroup.MapPermissionRolesEndpoints();
-tenantGroup.MapPortfolioEndpoints();
-tenantGroup.MapTradingOrderEndpoints();
-tenantGroup.MapPnLMetricsEndpoints();
-
-// ============================================
-// PUBLIC ENDPOINTS - No authentication (/*)
-// ============================================
-var publicGroup = app.MapPublicGroup();
-publicGroup.MapAuthEndpoints();
-
-// Prometheus metrics endpoint
+app.MapAuthEndpoints().WithTags("Auth");
+app.MapUsersEndpoints().WithTags("Users");
+app.MapPermissionsEndpoints().WithTags("Permissions");
+app.MapRolesEndpoints().WithTags("Roles");
+app.MapPermissionRolesEndpoints().WithTags("PermissionRoles");
+app.MapDashboardEndpoints().WithTags("Dashboard");
 app.MapPrometheusMetrics();
 
 using (IServiceScope scope = app.Services.CreateScope())

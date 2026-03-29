@@ -33,7 +33,6 @@ public class CacheService : ICacheService
                 {
                     _logger.LogDebug("Cache hit for key: {Key}", key);
                 }
-
                 return value;
             }
 
@@ -44,7 +43,6 @@ public class CacheService : ICacheService
             {
                 _logger.LogDebug("Cache miss for key: {Key}", key);
             }
-
             return default;
         }
         catch (Exception ex)

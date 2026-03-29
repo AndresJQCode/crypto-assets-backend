@@ -1,11 +1,7 @@
-using System.Text.Json;
 using Api.Application.Dtos.Auth;
 using Api.Application.Services.Auth;
 using Api.Extensions;
-using Api.Utilities;
-using Domain.AggregatesModel.AuditAggregate;
 using Domain.AggregatesModel.RoleAggregate;
-using Domain.AggregatesModel.TenantAggregate;
 using Domain.AggregatesModel.UserAggregate;
 using Domain.Exceptions;
 using Domain.Interfaces;
@@ -23,53 +19,36 @@ internal sealed class RegisterCommandHandler(
     IUserInfoService userInfoService,
     IRecaptchaService recaptchaService,
     IOptionsMonitor<AppSettings> appSettings,
-    ITenantRepository tenantRepository) : IRequestHandler<RegisterCommand, LoginResponseDto>
+    IHttpContextAccessor httpContextAccessor) : IRequestHandler<RegisterCommand, LoginResponseDto>
 {
     public async Task<LoginResponseDto> Handle(RegisterCommand request, CancellationToken cancellationToken)
     {
+        // Validar reCAPTCHA si está habilitado
         if (appSettings.CurrentValue.Recaptcha.Enabled && appSettings.CurrentValue.Recaptcha.RequiresValidation("/auth/register"))
         {
-            var recaptchaResult = await recaptchaService.ValidateTokenAsync(recaptchaToken: request.RecaptchaToken ?? string.Empty, recaptchaAction: "REGISTER");
+            var remoteIp = httpContextAccessor.HttpContext?.GetClientIpAddress();
+            var recaptchaResult = await recaptchaService.ValidateTokenAsync(request.RecaptchaToken ?? string.Empty, remoteIp);
+
             if (!recaptchaResult.Success)
-                throw new BadRequestException($"Validación de reCAPTCHA fallida: {recaptchaResult.ErrorMessage}");
-        }
-
-        var existingUser = await userManager.FindByEmailAsync(request.Email);
-        if (existingUser != null)
-            throw new BadRequestException("Ya existe un usuario con ese email");
-
-        var slug = TenantSlugHelper.GenerateFromName(request.TenantName);
-        Tenant? existingTenant = await tenantRepository.GetFirstOrDefaultByFilter(t => t.Slug == slug, cancellationToken: cancellationToken);
-        if (existingTenant is not null)
-        {
-            slug = TenantSlugHelper.AppendRandomSuffix(slug);
-            existingTenant = await tenantRepository.GetFirstOrDefaultByFilter(t => t.Slug == slug, cancellationToken: cancellationToken);
-            if (existingTenant != null)
             {
-                throw new BadRequestException("Ya existe una empresa con ese nombre. Elija otro.");
+                throw new BadRequestException($"Validación de reCAPTCHA fallida: {recaptchaResult.ErrorMessage}");
             }
         }
+        // Verificar si ya existe un usuario con ese email (el query filter excluye automáticamente usuarios eliminados)
+        var existingUser = await userManager.FindByEmailAsync(request.Email);
+        if (existingUser != null)
+        {
+            throw new BadRequestException("Ya existe un usuario con ese email");
+        }
 
-        // Create tenant using factory method that raises TenantRegisteredEvent
-        var tenant = Tenant.CreateForRegistration(
-            tenantName: request.TenantName,
-            tenantSlug: slug,
-            adminEmail: request.Email,
-            adminName: request.Name,
-            createdBy: null);
-
-        await tenantRepository.Create(tenant, cancellationToken);
-        await tenantRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken); // ← Domain events dispatched here
-
+        // Crear el nuevo usuario
         var user = new User
         {
             UserName = request.Email,
             Email = request.Email,
-            Name = request.Name,
-            WhatsAppNumber = request.WhatsAppNumber.Trim(),
-            TenantId = tenant.Id,
+            Name = request.Name
         };
-        user.Activate();
+        user.Activate(); // Activar el usuario usando el método público
 
         // Crear el usuario con contraseña
         var result = await userManager.CreateAsync(user, request.Password);
@@ -93,10 +72,6 @@ internal sealed class RegisterCommandHandler(
             var errors = string.Join(", ", roleResult.Errors.Select(e => e.Description));
             throw new BadRequestException($"Error al asignar el rol Admin: {errors}");
         }
-
-        tenant.CreatedBy = user.Id;
-        tenant.LastModifiedBy = user.Id;
-        await tenantRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
 
         // Generar access token y refresh token usando el servicio JWT
         var accessToken = jwtTokenService.GenerateToken(user, AppConstants.Authentication.DefaultProvider);

@@ -2,7 +2,6 @@ using System.Globalization;
 using System.Linq;
 using Api.Application.Dtos;
 using Api.Application.Dtos.User;
-using Api.Infrastructure.Services;
 using Api.Utilities;
 using Domain.AggregatesModel.UserAggregate;
 using Infrastructure;
@@ -18,25 +17,20 @@ internal sealed class GetAllUsersQueryHandler : IRequestHandler<GetAllUsersQuery
     private readonly UserManager<User> _userManager;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly ApiContext _context;
-    private readonly ITenantContext _tenantContext;
 
-    public GetAllUsersQueryHandler(UserManager<User> userManager, IHttpContextAccessor httpContextAccessor, ApiContext context, ITenantContext tenantContext)
+    public GetAllUsersQueryHandler(UserManager<User> userManager, IHttpContextAccessor httpContextAccessor, ApiContext context)
     {
         _userManager = userManager;
         _httpContextAccessor = httpContextAccessor;
         _context = context;
-        _tenantContext = tenantContext;
     }
 
     public async Task<PaginationResponseDto<UserResponseDto>> Handle(GetAllUsersQuery request, CancellationToken cancellationToken)
     {
         PaginationParameters? paginationParameters = request.PaginationParameters;
 
-        IQueryable<User> baseQuery = _userManager.Users.Include(u => u.UserRoles);
-
-        // Multi-tenant: usuarios con tenant solo ven usuarios de su tenant; SuperAdmin (sin tenant) ve todos
-        if (_tenantContext.GetCurrentTenantId() is { } tenantId)
-            baseQuery = baseQuery.Where(u => u.TenantId == tenantId);
+        Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<User, ICollection<UserRole>>? baseQuery = _userManager.Users
+            .Include(u => u.UserRoles);
 
         // Aplicar filtro de búsqueda si se proporciona
         IQueryable<User> filteredQuery = baseQuery;

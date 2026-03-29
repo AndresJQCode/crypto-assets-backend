@@ -4,19 +4,18 @@ using Api.Application.Dtos.Permission;
 using Api.Application.Dtos.Role;
 using Api.Application.Dtos.User;
 using Api.Application.Queries.RoleQueries;
+using Api.Constants;
 using Api.Extensions;
 using Domain.Exceptions;
-using Infrastructure.Constants;
 using MediatR;
 
 namespace Api.Apis.RolesEndpoints;
 
 internal static class RolesApi
 {
-    public static RouteGroupBuilder MapRolesEndpoints(this RouteGroupBuilder tenantGroup)
+    public static RouteGroupBuilder MapRolesEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = tenantGroup.MapGroup("/roles")
-            .WithTags("Tenant - Roles");
+        var group = app.MapGroup("roles");
 
 
         // GET /roles - Obtiene todos los roles (con o sin permisos)
@@ -38,7 +37,8 @@ internal static class RolesApi
         .WithName("GetAllRoles")
         .WithSummary("Obtener todos los roles")
         .WithDescription("Obtiene todos los roles disponibles. Use ?includePermissions=true para incluir permisos. Requiere permiso: Roles.Read")
-        .RequirePermission(PermissionResourcesConstants.Roles, PermissionActionsConstants.Read)
+        .RequireAuthorization()
+        .RequirePermission(PermissionConstants.Resources.Roles, PermissionConstants.Actions.Read)
         .Produces<IEnumerable<RoleDto>>()
         .Produces<IEnumerable<RoleWithPermissionsDto>>();
 
@@ -73,7 +73,8 @@ internal static class RolesApi
         .WithName("GetRoleById")
         .WithSummary("Obtener rol por ID")
         .WithDescription("Obtiene un rol específico por su ID. Use ?includePermissions=true para incluir permisos. Requiere permiso: Roles.Read")
-        .RequirePermission(PermissionResourcesConstants.Roles, PermissionActionsConstants.Read)
+        .RequireAuthorization()
+        .RequirePermission(PermissionConstants.Resources.Roles, PermissionConstants.Actions.Read)
         .Produces<RoleWithPermissionsDto>()
         .Produces<NotFoundException>();
 
@@ -87,7 +88,8 @@ internal static class RolesApi
         .WithName("GetRoleUsers")
         .WithSummary("Obtener usuarios de rol")
         .WithDescription("Obtiene los usuarios asignados a un rol específico. Requiere permiso: Roles.Read")
-        .RequirePermission(PermissionResourcesConstants.Roles, PermissionActionsConstants.Read)
+        .RequireAuthorization()
+        .RequirePermission(PermissionConstants.Resources.Roles, PermissionConstants.Actions.Read)
         .Produces<IEnumerable<UserResponseDto>>();
 
         // POST /roles - Crea un nuevo rol
@@ -106,7 +108,8 @@ internal static class RolesApi
         .WithName("CreateRole")
         .WithSummary("Crear rol")
         .WithDescription("Crea un nuevo rol en el sistema y asigna permisos si se proporcionan. Requiere permiso: Roles.Create")
-        .RequirePermission(PermissionResourcesConstants.Roles, PermissionActionsConstants.Create)
+        .RequireAuthorization()
+        .RequirePermission(PermissionConstants.Resources.Roles, PermissionConstants.Actions.Create)
         .Produces<RoleDto>(201)
         .Produces<BadRequestException>();
 
@@ -121,7 +124,8 @@ internal static class RolesApi
         .WithName("UpdateRoleWithPermissions")
         .WithSummary("Actualizar rol con permisos")
         .WithDescription("Actualiza un rol existente incluyendo su nombre, descripción y permisos en una sola operación. Requiere permiso: Roles.Update")
-        .RequirePermission(PermissionResourcesConstants.Roles, PermissionActionsConstants.Update)
+        .RequireAuthorization()
+        .RequirePermission(PermissionConstants.Resources.Roles, PermissionConstants.Actions.Update)
         .Produces<UpdateRoleWithPermissionsResponse>()
         .Produces<NotFoundException>()
         .Produces<BadRequestException>();
@@ -142,7 +146,8 @@ internal static class RolesApi
         .WithName("DeleteRole")
         .WithSummary("Eliminar rol")
         .WithDescription("Elimina un rol del sistema. Requiere permiso: Roles.Delete")
-        .RequirePermission(PermissionResourcesConstants.Roles, PermissionActionsConstants.Delete)
+        .RequireAuthorization()
+        .RequirePermission(PermissionConstants.Resources.Roles, PermissionConstants.Actions.Delete)
         .Produces<NotFoundException>()
         .Produces<BadRequestException>();
 
@@ -157,7 +162,8 @@ internal static class RolesApi
         .WithName("GetRolePermissions")
         .WithSummary("Obtener permisos de rol")
         .WithDescription("Obtiene todos los permisos asignados a un rol específico. Requiere permiso: Permissions.Read")
-        .RequirePermission(PermissionResourcesConstants.Permissions, PermissionActionsConstants.Read)
+        .RequireAuthorization()
+        .RequirePermission(PermissionConstants.Resources.Permissions, PermissionConstants.Actions.Read)
         .Produces<IEnumerable<PermissionDto>>();
 
 
@@ -177,7 +183,8 @@ internal static class RolesApi
         .WithName("RemovePermissionFromRole")
         .WithSummary("Remover permiso de rol")
         .WithDescription("Remueve un permiso específico de un rol. Requiere permiso: Permissions.Assign")
-        .RequirePermission(PermissionResourcesConstants.Roles, PermissionActionsConstants.Update)
+        .RequireAuthorization()
+        .RequirePermission(PermissionConstants.Resources.Roles, PermissionConstants.Actions.Update)
         .Produces<NotFoundException>()
         .Produces<BadRequestException>();
 

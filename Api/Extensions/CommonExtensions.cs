@@ -6,6 +6,7 @@ using System.Text.Json.Serialization;
 using Api.Constants;
 using Api.Infrastructure.Middlewares;
 using Api.Infrastructure.Services;
+using Azure.Identity;
 using Domain.AggregatesModel.UserAggregate;
 using Domain.Interfaces;
 using HealthChecks.UI.Client;
@@ -14,11 +15,11 @@ using Infrastructure.ServiceBus;
 using Infrastructure.ServiceBus.Interfaces;
 using Infrastructure.Services.Loggers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using Serilog.Exceptions;
@@ -126,22 +127,19 @@ internal static class CommonExtensions
 
     public static async Task<bool> CheckHealthAsync(this WebApplication app)
     {
-        if (app.Logger.IsEnabled(LogLevel.Information))
-        {
-            app.Logger.LogInformation("Running health checks...");
-        }
+        app.Logger.LogInformation("Running health checks...");
 
         // Do a health check on startup, this will throw an exception if any of the checks fail
         var report = await app.Services.GetRequiredService<HealthCheckService>().CheckHealthAsync();
 
         if (report.Status == HealthStatus.Unhealthy)
         {
-            if (app.Logger.IsEnabled(LogLevel.Critical))
+            app.Logger.LogCritical("Health checks failed!");
+            foreach (var entry in report.Entries)
             {
-                app.Logger.LogCritical("Health checks failed!");
-                foreach (var entry in report.Entries)
+                if (entry.Value.Status == HealthStatus.Unhealthy)
                 {
-                    if (entry.Value.Status == HealthStatus.Unhealthy)
+                    if (app.Logger.IsEnabled(LogLevel.Critical))
                     {
                         app.Logger.LogCritical("{Check}: {Status}", entry.Key, entry.Value.Status);
                     }

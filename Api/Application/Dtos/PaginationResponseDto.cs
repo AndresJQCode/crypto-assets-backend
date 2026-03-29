@@ -1,6 +1,6 @@
 namespace Api.Application.Dtos;
 
-public sealed class PaginationResponseDto<T>
+internal sealed class PaginationResponseDto<T>
 {
     public IEnumerable<T> Data { get; set; } = new List<T>();
     public int TotalCount { get; set; }

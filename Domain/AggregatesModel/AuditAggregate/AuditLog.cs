@@ -15,17 +15,6 @@ public class AuditLog : Entity<Guid>, IAggregateRoot
     public string? Reason { get; private set; }
     public DateTimeOffset Timestamp { get; private set; }
     public string? AdditionalData { get; private set; } // JSON con datos adicionales
-    public string? Ip { get; private set; }
-
-    /// <summary>
-    /// Asigna la IP del cliente cuando no fue proporcionada en el constructor.
-    /// Usado por infraestructura (p. ej. escritor de auditoría fuera de transacción) para rellenar desde el contexto HTTP.
-    /// </summary>
-    public void SetClientIpIfEmpty(string? ip)
-    {
-        if (string.IsNullOrEmpty(Ip))
-            Ip = ip;
-    }
 
     private AuditLog() { } // Para EF Core
 
@@ -36,8 +25,7 @@ public class AuditLog : Entity<Guid>, IAggregateRoot
         Guid? userId = null,
         string? userName = null,
         string? reason = null,
-        string? additionalData = null,
-        string? ip = null)
+        string? additionalData = null)
     {
         Id = Guid.CreateVersion7();
         EntityType = entityType ?? throw new ArgumentNullException(nameof(entityType));
@@ -48,7 +36,6 @@ public class AuditLog : Entity<Guid>, IAggregateRoot
         Reason = reason;
         Timestamp = DateTimeOffset.UtcNow;
         AdditionalData = additionalData;
-        Ip = ip;
 
         // Inicializar propiedades heredadas de Entity
         CreatedOn = DateTimeOffset.UtcNow;
@@ -64,16 +51,14 @@ public class AuditLog : Entity<Guid>, IAggregateRoot
     /// <param name="userName">Nombre del usuario que eliminó</param>
     /// <param name="reason">Razón de la eliminación</param>
     /// <param name="additionalData">JSON con snapshot de la entidad u otros datos relevantes</param>
-    /// <param name="ip">Dirección IP del cliente (opcional)</param>
     public static AuditLog CreateDeletionLog(
         string entityType,
         Guid entityId,
         Guid? userId = null,
         string? userName = null,
         string? reason = null,
-        string? additionalData = null,
-        string? ip = null)
+        string? additionalData = null)
     {
-        return new AuditLog(entityType, entityId, "DELETE", userId, userName, reason, additionalData, ip);
+        return new AuditLog(entityType, entityId, "DELETE", userId, userName, reason, additionalData);
     }
 }

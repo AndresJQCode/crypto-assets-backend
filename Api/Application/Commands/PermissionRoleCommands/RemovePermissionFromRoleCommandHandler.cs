@@ -1,14 +1,15 @@
 using Api.Infrastructure.Services;
 using Domain.AggregatesModel.PermissionAggregate;
-using Domain.AggregatesModel.UserAggregate;
+using Infrastructure;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace Api.Application.Commands.PermissionRoleCommands;
 
 internal sealed class RemovePermissionFromRoleCommandHandler(
     IPermissionRoleRepository permissionRoleRepository,
     IPermissionService permissionService,
-    IUserRoleRepository userRoleRepository
+    ApiContext context
 ) : IRequestHandler<RemovePermissionFromRoleCommand, bool>
 {
 
@@ -39,8 +40,13 @@ internal sealed class RemovePermissionFromRoleCommandHandler(
     {
         try
         {
-            var userIds = await userRoleRepository.GetUserIdsByRoleIdAsync(roleId, cancellationToken);
+            // Obtener usuarios que tienen este rol específico usando consulta directa
+            var userIds = await context.UserRoles
+                .Where(ur => ur.RoleId == roleId)
+                .Select(ur => ur.UserId)
+                .ToListAsync(cancellationToken);
 
+            // Invalidar caché solo para estos usuarios
             foreach (var userId in userIds)
             {
                 await permissionService.InvalidateUserCacheAsync(userId);
@@ -48,6 +54,8 @@ internal sealed class RemovePermissionFromRoleCommandHandler(
         }
         catch (Exception ex)
         {
+            // Log del error pero no fallar la operación principal
+            // En un escenario real, podrías usar un logger aquí
             throw new InvalidOperationException($"Error al invalidar caché para usuarios del rol {roleId}: {ex.Message}", ex);
         }
     }

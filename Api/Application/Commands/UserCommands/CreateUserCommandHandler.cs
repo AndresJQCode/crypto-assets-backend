@@ -1,31 +1,31 @@
 using System.Security.Cryptography;
 using Api.Application.Dtos.User;
-using Api.Infrastructure.Services;
 using Domain.AggregatesModel.RoleAggregate;
 using Domain.AggregatesModel.UserAggregate;
 using Domain.Exceptions;
+using Infrastructure;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 
 namespace Api.Application.Commands.UserCommands;
 
-internal sealed class CreateUserCommandHandler(UserManager<User> userManager, RoleManager<Role> roleManager, ITenantContext tenantContext) : IRequestHandler<CreateUserCommand, UserResponseDto>
+internal sealed class CreateUserCommandHandler(UserManager<User> userManager, RoleManager<Role> roleManager) : IRequestHandler<CreateUserCommand, UserResponseDto>
 {
     public async Task<UserResponseDto> Handle(CreateUserCommand request, CancellationToken cancellationToken)
     {
-        var currentTenantId = tenantContext.GetCurrentTenantId();
+        // Verificar si ya existe un usuario con ese email (el query filter excluye automáticamente usuarios eliminados)
         var existingUser = await userManager.FindByEmailAsync(request.Email);
         if (existingUser is not null)
-            throw new BadRequestException("Ya existe un usuario con ese email.");
+        {
+            throw new BadRequestException("Ya existe un usuario con ese email");
+        }
 
-        // UserName = Email (convención del sistema)
-        // Identity normaliza automáticamente UserName y Email
+        // Crear el nuevo usuario
         var user = new User
         {
             UserName = request.Email,
             Email = request.Email,
             Name = request.Name,
-            TenantId = currentTenantId,
         };
 
         // Crear el usuario con contraseña generada

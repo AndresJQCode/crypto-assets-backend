@@ -9,9 +9,9 @@ public interface IRecaptchaService
     /// Validar un token de reCAPTCHA
     /// </summary>
     /// <param name="recaptchaToken">Token generado por el frontend</param>
-    /// <param name="recaptchaAction">Acción esperada en el token</param>
+    /// <param name="remoteIpAddress">IP del cliente (opcional, recomendado)</param>
     /// <returns>Resultado de la validación con score y éxito</returns>
-    Task<RecaptchaValidationResult> ValidateTokenAsync(string recaptchaToken, string recaptchaAction);
+    Task<RecaptchaValidationResult> ValidateTokenAsync(string recaptchaToken, string? remoteIpAddress = null);
 }
 
 /// <summary>
@@ -20,11 +20,11 @@ public interface IRecaptchaService
 public class RecaptchaValidationResult
 {
     private IReadOnlyCollection<string> _errorCodes = Array.Empty<string>();
-
+    
     public bool Success { get; set; }
     public double Score { get; set; }
     public string? ErrorMessage { get; set; }
-
+    
     public IReadOnlyCollection<string> ErrorCodes
     {
         get => _errorCodes;

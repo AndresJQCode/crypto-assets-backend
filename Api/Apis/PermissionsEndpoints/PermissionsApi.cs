@@ -1,6 +1,6 @@
 using Api.Application.Dtos.Permission;
 using Api.Application.Queries.PermissionQueries;
-using Infrastructure.Constants;
+using Api.Constants;
 using Api.Extensions;
 using Domain.Exceptions;
 using MediatR;
@@ -9,12 +9,11 @@ namespace Api.Apis.PermissionsEndpoints;
 
 internal static class PermissionsApi
 {
-    public static RouteGroupBuilder MapPermissionsEndpoints(this RouteGroupBuilder adminGroup)
+    public static RouteGroupBuilder MapPermissionsEndpoints(this IEndpointRouteBuilder endpoints)
     {
-        RouteGroupBuilder group = adminGroup.MapGroup("/permissions")
-            .WithTags("Admin - Permissions");
+        RouteGroupBuilder group = endpoints.MapGroup("permissions");
 
-        // GET /admin/permissions - Obtiene todos los permisos
+        // GET /permissions - Obtiene todos los permisos
         group.MapGet("", async (IMediator mediator, string? resource = null) =>
         {
             var query = new GetAllPermissionsSimpleQuery
@@ -26,10 +25,12 @@ internal static class PermissionsApi
         })
         .WithName("GetAllPermissions")
         .WithSummary("Obtener todos los permisos")
-        .WithDescription("Obtiene todos los permisos disponibles con filtros opcionales. Solo SuperAdmin.")
+        .WithDescription("Obtiene todos los permisos disponibles con filtros opcionales. Requiere permiso: Permissions.Read")
+        .RequireAuthorization()
+        .RequirePermission(PermissionConstants.Resources.Permissions, PermissionConstants.Actions.Read)
         .Produces<IEnumerable<PermissionDto>>();
 
-        // GET /admin/permissions/{id} - Obtiene un permiso por ID
+        // GET /permissions/{id} - Obtiene un permiso por ID
         group.MapGet("/{id:guid}", async (IMediator mediator, Guid id) =>
         {
             var query = new GetPermissionByIdQuery(id);
@@ -39,7 +40,9 @@ internal static class PermissionsApi
         })
         .WithName("GetPermissionById")
         .WithSummary("Obtener permiso por ID")
-        .WithDescription("Obtiene un permiso específico por su ID. Solo SuperAdmin.")
+        .WithDescription("Obtiene un permiso específico por su ID. Requiere permiso: Permissions.Read")
+        .RequireAuthorization()
+        .RequirePermission(PermissionConstants.Resources.Permissions, PermissionConstants.Actions.Read)
         .Produces<PermissionDto>()
         .Produces<NotFoundException>();
 

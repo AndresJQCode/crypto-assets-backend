@@ -13,25 +13,25 @@ internal static class AuthApi
 {
     public static RouteGroupBuilder MapAuthEndpoints(this IEndpointRouteBuilder app)
     {
-        RouteGroupBuilder api = app.MapGroup("/auth");
+        RouteGroupBuilder api = app.MapGroup("auth");
 
         _ = api.MapPost("/login", Login)
             .WithName("Login")
             .WithSummary("Iniciar sesión")
             .WithDescription("Autentica al usuario y devuelve un token JWT")
-            .Produces<LoginResponseDto>()
-            .Produces<BadRequestException>()
-            .Produces<ProblemHttpResult>();
+            .Produces<LoginResponseDto>(200)
+            .Produces<BadRequestException>(400)
+            .Produces<ProblemHttpResult>(500);
 
-        _ = api.MapPost("/register", Register)
-            .WithName("Register")
-            .WithSummary("Registrar usuario")
-            .WithDescription("Crea un nuevo tenant (empresa) y su primer usuario con rol Admin.")
-            .Produces<LoginResponseDto>()
-            .Produces<BadRequestException>()
-            .Produces<ProblemHttpResult>();
+        // _ = api.MapPost("/register", Register)
+        //     .WithName("Register")
+        //     .WithSummary("Registrar usuario")
+        //     .WithDescription("Registra un nuevo usuario con rol Admin y devuelve un token JWT")
+        //     .Produces<LoginResponseDto>()
+        //     .Produces<BadRequestException>()
+        //     .Produces<ProblemHttpResult>();
 
-        _ = api.MapPost("/exchange-code", ExchangeCode)
+        _ = api.MapPost("/exchangeCode", ExchangeCode)
             .WithName("ExchangeCode")
             .WithSummary("Intercambiar código de autenticación")
             .WithDescription("Intercambia un código de autenticación por un token JWT")
@@ -115,8 +115,7 @@ internal static class AuthApi
         ExchangeCodeCommand command = new()
         {
             Code = request.Code,
-            Provider = request.Provider,
-            State = request.State
+            Provider = request.Provider
         };
 
         try

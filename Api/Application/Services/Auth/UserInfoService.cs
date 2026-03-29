@@ -27,8 +27,6 @@ internal sealed class UserInfoService(UserManager<User> userManager, IPermission
             Id = user.Id.ToString(),
             Email = user.Email ?? string.Empty,
             Name = user.Name ?? user.UserName ?? string.Empty,
-            WhatsAppNumber = user.WhatsAppNumber,
-            TenantId = user.TenantId?.ToString(),
             Roles = [.. roles],
             Permissions = [.. permissionsDto]
         };

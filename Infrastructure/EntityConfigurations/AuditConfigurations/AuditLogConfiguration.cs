@@ -41,10 +41,6 @@ public class AuditLogConfiguration : IEntityTypeConfiguration<AuditLog>
             .HasColumnType("text")
             .IsRequired(false);
 
-        builder.Property(x => x.Ip)
-            .HasMaxLength(45)
-            .IsRequired(false);
-
         // Configurar índices para mejorar el rendimiento de consultas
         builder.HasIndex(x => new { x.EntityType, x.EntityId })
             .HasDatabaseName("IX_AuditLogs_EntityType_EntityId");

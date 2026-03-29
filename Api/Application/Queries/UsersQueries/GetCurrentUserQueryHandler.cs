@@ -52,7 +52,6 @@ internal sealed class GetCurrentUserQueryHandler(UserManager<User> userManager, 
                 Email = user.Email ?? string.Empty,
                 Name = user.Name ?? string.Empty,
                 IsActive = user.IsActive,
-                TenantId = user.TenantId?.ToString(),
                 Roles = [.. userRoles],
                 Permissions = [.. permissions.Select(p => new UserPermissionDto
                     {

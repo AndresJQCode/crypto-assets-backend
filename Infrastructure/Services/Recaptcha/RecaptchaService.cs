@@ -1,149 +1,178 @@
+using System.Net.Http.Json;
+using System.Text.Json.Serialization;
 using Domain.Interfaces;
-using Google.Api.Gax.ResourceNames;
-using Google.Apis.Auth.OAuth2;
-using Google.Cloud.RecaptchaEnterprise.V1;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Infrastructure.Services.Recaptcha;
 
 /// <summary>
-/// Servicio para validar tokens con Google reCAPTCHA Enterprise (recomendado por Google).
+/// Servicio para validar tokens de Google reCAPTCHA v3
 /// </summary>
 public class RecaptchaService(
     IOptionsMonitor<AppSettings> appSettings,
+    IHttpClientFactory httpClientFactory,
     ILogger<RecaptchaService> logger) : IRecaptchaService
 {
-    private Task<RecaptchaEnterpriseServiceClient>? _clientTask;
-    private readonly object _clientLock = new();
-
     private AppSettings.RecaptchaSettings Settings => appSettings.CurrentValue.Recaptcha;
 
-    private Task<RecaptchaEnterpriseServiceClient> GetOrCreateClientAsync()
+    public async Task<RecaptchaValidationResult> ValidateTokenAsync(string recaptchaToken, string? remoteIpAddress = null)
     {
-        if (_clientTask != null)
-            return _clientTask;
-        lock (_clientLock)
+        // Si reCAPTCHA está deshabilitado, permitir la validación
+        if (!Settings.Enabled)
         {
-            _clientTask ??= CreateClientAsync();
-            return _clientTask;
-        }
-    }
-
-    private async Task<RecaptchaEnterpriseServiceClient> CreateClientAsync()
-    {
-        var recaptcha = Settings;
-
-        if (!string.IsNullOrWhiteSpace(recaptcha.CredentialsJson))
-        {
-            GoogleCredential credential = CredentialFactory.FromJson<ServiceAccountCredential>(recaptcha.CredentialsJson)
-                .ToGoogleCredential();
-            var builder = new RecaptchaEnterpriseServiceClientBuilder
+            logger.LogDebug("reCAPTCHA está deshabilitado, saltando validación");
+            return new RecaptchaValidationResult
             {
-                GoogleCredential = credential
+                Success = true,
+                Score = 1.0
             };
-            return await builder.BuildAsync();
         }
 
-        // 3) Application Default Credentials
-        return await RecaptchaEnterpriseServiceClient.CreateAsync();
-    }
-
-    public async Task<RecaptchaValidationResult> ValidateTokenAsync(string recaptchaToken, string recaptchaAction)
-    {
-        RecaptchaEnterpriseServiceClient client = await GetOrCreateClientAsync();
-
-        ProjectName projectName = new ProjectName(Settings.ProjectId);
-
-        // Build the assessment request.
-        CreateAssessmentRequest createAssessmentRequest = new CreateAssessmentRequest()
+        if (string.IsNullOrWhiteSpace(recaptchaToken))
         {
-            Assessment = new Assessment()
-            {
-                // Set the properties of the event to be tracked.
-                Event = new Event()
-                {
-                    SiteKey = Settings.SiteKey,
-                    Token = recaptchaToken,
-                    ExpectedAction = recaptchaAction
-                },
-            },
-            ParentAsProjectName = projectName
-        };
-
-        Assessment response = await client.CreateAssessmentAsync(createAssessmentRequest);
-
-        // Check if the token is valid.
-        if (response.TokenProperties.Valid == false)
-        {
-            System.Console.WriteLine("The CreateAssessment call failed because the token was: " +
-                response.TokenProperties.InvalidReason.ToString());
+            logger.LogWarning("Token de reCAPTCHA vacío o nulo");
             return new RecaptchaValidationResult
             {
                 Success = false,
                 Score = 0.0,
-                ErrorMessage = "Token de reCAPTCHA inválido",
-                ErrorCodes = new List<string> { "invalid-token" }
+                ErrorMessage = "Token de reCAPTCHA requerido",
+                ErrorCodes = new List<string> { "missing-input-response" }
             };
         }
 
-        // Check if the expected action was executed.
-        if (response.TokenProperties.Action != recaptchaAction)
+        try
         {
-            System.Console.WriteLine("The action attribute in reCAPTCHA tag is: " +
-                response.TokenProperties.Action.ToString());
+            // Construir la URL de verificación
+            var requestUri = $"{Settings.VerificationUrl}?secret={Settings.SecretKey}&response={recaptchaToken}";
+
+            if (!string.IsNullOrWhiteSpace(remoteIpAddress))
+            {
+                requestUri += $"&remoteip={remoteIpAddress}";
+            }
+
+            logger.LogDebug("Validando token de reCAPTCHA con Google");
+
+            // Realizar la petición a Google
+            using var httpClient = httpClientFactory.CreateClient();
+            httpClient.Timeout = TimeSpan.FromSeconds(Settings.TimeoutSeconds);
+            var response = await httpClient.PostAsync(new Uri(requestUri), null);
+            response.EnsureSuccessStatusCode();
+
+            var jsonResponse = await response.Content.ReadFromJsonAsync<GoogleRecaptchaResponse>();
+
+            if (jsonResponse == null)
+            {
+                logger.LogError("Respuesta inválida de Google reCAPTCHA");
+                return new RecaptchaValidationResult
+                {
+                    Success = false,
+                    Score = 0.0,
+                    ErrorMessage = "Error al validar con Google reCAPTCHA",
+                    ErrorCodes = new List<string> { "invalid-response" }
+                };
+            }
+
+            // Verificar si la validación fue exitosa
+            if (!jsonResponse.Success)
+            {
+                logger.LogWarning("Validación de reCAPTCHA fallida. Errores: {Errors}",
+                    string.Join(", ", jsonResponse.ErrorCodes ?? new List<string>()));
+
+                return new RecaptchaValidationResult
+                {
+                    Success = false,
+                    Score = 0.0,
+                    ErrorMessage = "Token de reCAPTCHA inválido",
+                    ErrorCodes = jsonResponse.ErrorCodes ?? new List<string>()
+                };
+            }
+
+            // Verificar el score (solo para reCAPTCHA v3)
+            var score = jsonResponse.Score ?? 0.0;
+            if (score < Settings.MinimumScore)
+            {
+                logger.LogWarning("Score de reCAPTCHA demasiado bajo: {Score} (mínimo requerido: {MinimumScore})",
+                    score, Settings.MinimumScore);
+
+                return new RecaptchaValidationResult
+                {
+                    Success = false,
+                    Score = score,
+                    ErrorMessage = $"Score de reCAPTCHA demasiado bajo: {score:F2} (mínimo: {Settings.MinimumScore:F2})",
+                    ErrorCodes = new List<string> { "low-score" }
+                };
+            }
+
             if (logger.IsEnabled(LogLevel.Debug))
             {
-                logger.LogDebug("The action attribute in the reCAPTCHA tag does not match the action you are expecting to score");
+                logger.LogDebug("Validación de reCAPTCHA exitosa. Score: {Score}", score);
             }
 
+            return new RecaptchaValidationResult
+            {
+                Success = true,
+                Score = score,
+                ErrorCodes = new List<string>()
+            };
+        }
+        catch (TaskCanceledException ex)
+        {
+            logger.LogError(ex, "Timeout al validar token de reCAPTCHA");
             return new RecaptchaValidationResult
             {
                 Success = false,
                 Score = 0.0,
-                ErrorMessage = "La acción del token no coincide con la esperada",
-                ErrorCodes = new List<string> { "action-mismatch" }
+                ErrorMessage = "Timeout al validar con Google reCAPTCHA",
+                ErrorCodes = new List<string> { "timeout" }
             };
         }
-
-        // Get the risk score and the reason(s).
-        // For more information on interpreting the assessment, see:
-        // https://cloud.google.com/recaptcha/docs/interpret-assessment
-
-        if (logger.IsEnabled(LogLevel.Debug))
+        catch (HttpRequestException ex)
         {
-            logger.LogDebug("Validación de reCAPTCHA Enterprise exitosa. Score: {Score}", (decimal)response.RiskAnalysis.Score);
-        }
-
-        double score = response.RiskAnalysis.Score;
-
-        logger.LogWarning("Score de reCAPTCHA demasiado bajo: {Score} (mínimo requerido: {MinimumScore})",
-            score, Settings.MinimumScore);
-
-        if (score < Settings.MinimumScore)
-        {
-            List<string>? reasons = [];
-            string? errorMessage = $"Score de reCAPTCHA demasiado bajo: {score:F2} (mínimo: {Settings.MinimumScore:F2})";
-
-            foreach (RiskAnalysis.Types.ClassificationReason reason in response.RiskAnalysis.Reasons)
-            {
-                reasons.Add(reason.ToString());
-            }
-
+            logger.LogError(ex, "Error HTTP al validar token de reCAPTCHA");
             return new RecaptchaValidationResult
             {
                 Success = false,
-                Score = score,
-                ErrorMessage = errorMessage,
-                ErrorCodes = reasons
+                Score = 0.0,
+                ErrorMessage = "Error al comunicarse con Google reCAPTCHA",
+                ErrorCodes = new List<string> { "http-error" }
             };
         }
-
-        return new RecaptchaValidationResult
+        catch (Exception ex)
         {
-            Success = true,
-            Score = score,
-            ErrorCodes = new List<string>()
-        };
+            logger.LogError(ex, "Error inesperado al validar token de reCAPTCHA");
+            return new RecaptchaValidationResult
+            {
+                Success = false,
+                Score = 0.0,
+                ErrorMessage = "Error inesperado al validar reCAPTCHA",
+                ErrorCodes = new List<string> { "unexpected-error" }
+            };
+        }
+    }
+
+    /// <summary>
+    /// Respuesta de la API de Google reCAPTCHA
+    /// </summary>
+    private sealed class GoogleRecaptchaResponse
+    {
+        [JsonPropertyName("success")]
+        public bool Success { get; set; }
+
+        [JsonPropertyName("score")]
+        public double? Score { get; set; }
+
+        [JsonPropertyName("action")]
+        public string? Action { get; set; }
+
+        [JsonPropertyName("challenge_ts")]
+        public DateTime? ChallengeTimestamp { get; set; }
+
+        [JsonPropertyName("hostname")]
+        public string? Hostname { get; set; }
+
+        [JsonPropertyName("error-codes")]
+        public List<string>? ErrorCodes { get; set; }
     }
 }
+

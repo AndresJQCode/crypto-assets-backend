@@ -8,12 +8,11 @@ namespace Api.Apis.PermissionRolesEndpoints;
 
 internal static class PermissionRolesApi
 {
-    public static RouteGroupBuilder MapPermissionRolesEndpoints(this RouteGroupBuilder tenantGroup)
+    public static RouteGroupBuilder MapPermissionRolesEndpoints(this IEndpointRouteBuilder app)
     {
         // Este grupo ya no tiene endpoints ya que todos han sido movidos
         // a sus respectivos APIs para seguir las convenciones REST
-        var group = tenantGroup.MapGroup("/permission-roles")
-            .WithTags("Tenant - Permission Roles");
+        var group = app.MapGroup("permission-roles");
 
         // TODO: Agregar aquí futuras funcionalidades específicas de relaciones
         // que no pertenezcan a ningún recurso específico

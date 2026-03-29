@@ -9,22 +9,23 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Api.Application.Commands.UserCommands;
 
-internal sealed class UpdateUserCommandHandler(UserManager<User> userManager, RoleManager<Role> roleManager, IPermissionService permissionService, ITenantContext tenantContext) : IRequestHandler<UpdateUserCommand, UserResponseDto>
+internal sealed class UpdateUserCommandHandler(UserManager<User> userManager, RoleManager<Role> roleManager, IPermissionService permissionService) : IRequestHandler<UpdateUserCommand, UserResponseDto>
 {
     public async Task<UserResponseDto> Handle(UpdateUserCommand request, CancellationToken cancellationToken)
     {
+        // Buscar el usuario
         var user = await userManager.FindByIdAsync(request.Id.ToString());
         if (user == null)
+        {
             throw new NotFoundException($"Usuario con ID {request.Id} no encontrado");
+        }
 
-        if (tenantContext.GetCurrentTenantId() is { } tenantId && user.TenantId != tenantId)
-            throw new NotFoundException($"Usuario con ID {request.Id} no encontrado");
-
-        // Verificar si el email ya existe en otro usuario (único global)
-        var existingUser = await userManager.Users
-            .FirstOrDefaultAsync(u => string.Equals(u.NormalizedEmail, request.Email, StringComparison.OrdinalIgnoreCase) && u.Id != request.Id, cancellationToken);
-        if (existingUser != null)
-            throw new BadRequestException("Ya existe otro usuario con ese email.");
+        // Verificar si el email ya existe en otro usuario
+        var existingUser = await userManager.FindByEmailAsync(request.Email);
+        if (existingUser != null && existingUser.Id != request.Id)
+        {
+            throw new BadRequestException("Ya existe otro usuario con ese email");
+        }
 
         // Actualizar propiedades básicas del usuario
         user.Name = request.Name;

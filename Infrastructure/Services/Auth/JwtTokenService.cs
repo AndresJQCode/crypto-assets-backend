@@ -4,7 +4,6 @@ using System.Security.Claims;
 using System.Text;
 using Domain.AggregatesModel.UserAggregate;
 using Domain.Interfaces;
-using Infrastructure;
 using Infrastructure.Constants;
 using Infrastructure.Metrics;
 using Microsoft.Extensions.Logging;
@@ -33,14 +32,13 @@ public class JwtTokenService(
 
             var claims = new List<Claim>
                         {
+                                // Solo claims seguros y necesarios
                                 new(ClaimTypes.NameIdentifier, user.Id.ToString()),
                                 new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                                 new(JwtRegisteredClaimNames.Iat,
                                         new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture),
                                         ClaimValueTypes.Integer64)
                         };
-            if (user.TenantId.HasValue)
-                claims.Add(new Claim(AppConstants.Authentication.TenantIdClaim, user.TenantId.Value.ToString()));
 
             var token = new JwtSecurityToken(
                     issuer: issuer,

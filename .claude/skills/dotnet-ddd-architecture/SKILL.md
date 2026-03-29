@@ -170,33 +170,21 @@ Application/
 └── Interfaces/          # Infrastructure contracts
 ```
 
-**Mapping (Mapster)**
-
-- ✅ Los tipos pueden mapearse con **Mapster** usando el método de extensión **`.Adapt<T>()`**.
-- Usar `.Adapt<T>()` para: Request → Command/Query en endpoints, Entidad/Agregado → DTO en handlers.
-- Preferir Mapster frente a mapeo manual o AutoMapper para menos configuración y mejor rendimiento.
-
-```csharp
-// En endpoint: Request → Command
-var command = request.Adapt<CreateWarehouseCommand>();
-
-// En handler: Entidad → DTO
-return warehouse.Adapt<WarehouseDto>();
-```
-
 **Command Handler Example**
 
 ```csharp
-public class ReceiveInventoryCommandHandler(
-    IWarehouseRepository repository)
+public class ReceiveInventoryCommandHandler
     : IRequestHandler<ReceiveInventoryCommand, Result>
 {
+    private readonly IWarehouseRepository _repository;
+    private readonly IUnitOfWork _unitOfWork;
+
     public async Task<Result> Handle(
         ReceiveInventoryCommand request,
         CancellationToken cancellationToken)
     {
         // Load aggregate root via repository
-        var warehouse = await repository.GetByIdAsync(
+        var warehouse = await _repository.GetByIdAsync(
             new WarehouseId(request.WarehouseId),
             cancellationToken);
 
@@ -210,8 +198,8 @@ public class ReceiveInventoryCommandHandler(
 
         warehouse.ReceiveInventory(item);
 
-        // Persistence via repository's UnitOfWork
-        await repository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
+        // Persistence
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Success();
     }
@@ -340,119 +328,6 @@ public class InventoryQueryService : IInventoryQueryService
 
 ---
 
-### Configuration Pattern - IOptions<AppSettings>
-
-**CRITICAL RULE**: Use `IOptions<AppSettings>` instead of `IConfiguration` for typed, validated configuration
-
-**Why This Pattern**
-
-1. **Type Safety**: Compile-time checking of configuration properties
-2. **Validation**: Automatic validation of required settings
-3. **IntelliSense**: Full IDE support for configuration access
-4. **Testability**: Easy to mock and test
-5. **Consistency**: Single source of truth for all settings
-
-**AppSettings Class Structure**
-
-```csharp
-// Infrastructure/AppSettings.cs
-public class AppSettings
-{
-    // Required settings use 'required' keyword
-    public required string ApplicationName { get; set; }
-    public required ConnectionStringsSettings ConnectionStrings { get; set; }
-    public required JwtConfiguration JwtSettings { get; set; }
-
-    // Optional settings with defaults
-    public PaginationSettings Pagination { get; set; } = new();
-    public CorsSettings Cors { get; set; } = new();
-
-    // Sensitive settings (should come from env vars or Key Vault)
-    public required string EncryptionKey { get; set; }
-
-    // Nested settings classes
-    public class ConnectionStringsSettings
-    {
-        public required string DB { get; set; }
-    }
-
-    public class JwtConfiguration
-    {
-        public required string SecretKey { get; set; }
-        public required string Issuer { get; set; }
-        public required string Audience { get; set; }
-        public int ExpirationMinutes { get; set; } = 60;
-    }
-
-    public class PaginationSettings
-    {
-        public int MaxPageSize { get; set; } = 100;
-        public int DefaultPageSize { get; set; } = 10;
-    }
-}
-```
-
-**Registration in Program.cs**
-
-**Usage in Infrastructure Services**
-
-```csharp
-// ✅ CORRECT - Use IOptions<AppSettings>
-public class AesEncryptionService(
-    IOptions<AppSettings> settings,
-    ILogger<AesEncryptionService> logger) : IEncryptionService
-{
-    private readonly AppSettings _settings = settings.Value;
-
-    private byte[] GetEncryptionKey()
-    {
-        var base64Key = _settings.EncryptionKey;  // Type-safe access
-
-        if (string.IsNullOrWhiteSpace(base64Key))
-        {
-            throw new InvalidOperationException(
-                "Encryption key not found in AppSettings");
-        }
-
-        return Convert.FromBase64String(base64Key);
-    }
-}
-
-// ❌ INCORRECT - Don't use IConfiguration directly
-public class BadEncryptionService(
-    IConfiguration configuration,  // ❌ AVOID THIS
-    ILogger<BadEncryptionService> logger) : IEncryptionService
-{
-    private byte[] GetEncryptionKey()
-    {
-        var key = configuration["EncryptionKey"];  // ❌ Magic string, no type safety
-        return Convert.FromBase64String(key);
-    }
-}
-```
-
-**Configuration Sources Priority**
-
-1. **appsettings.json** - Base configuration
-2. **appsettings.{Environment}.json** - Environment-specific overrides
-
-**Best Practices**
-
-✅ **DO:**
-- Use `IOptions<AppSettings>` for all configuration access
-- Mark required settings with `required` keyword
-- Use nested classes for logical grouping
-- Add default values for optional settings
-
-❌ **DON'T:**
-- Use `IConfiguration` directly in services (only in Program.cs)
-- Use magic strings for configuration keys
-- Store secrets in appsettings.json
-- Commit appsettings.Development.json with secrets
-- Access configuration without type safety
-
----
-
 ### 4. API LAYER
 
 **Rules**
@@ -536,10 +411,12 @@ public record CreateWarehouseCommand(
     string Address,
     int MaxCapacity) : IRequest<Result<Guid>>;
 
-public class CreateWarehouseCommandHandler(
-    IWarehouseRepository repository)
+public class CreateWarehouseCommandHandler
     : IRequestHandler<CreateWarehouseCommand, Result<Guid>>
 {
+    private readonly IWarehouseRepository _repository;
+    private readonly IUnitOfWork _unitOfWork;
+
     public async Task<Result<Guid>> Handle(
         CreateWarehouseCommand request,
         CancellationToken cancellationToken)
@@ -550,10 +427,8 @@ public class CreateWarehouseCommandHandler(
             new Location(request.Address, Coordinates.Default),
             new Capacity(request.MaxCapacity));
 
-        repository.Add(warehouse);
-        
-        // Use repository.UnitOfWork - NEVER inject IUnitOfWork directly
-        await repository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
+        _repository.Add(warehouse);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Success(warehouse.Id.Value);
     }
@@ -916,7 +791,6 @@ Before submitting code, Claude MUST verify:
 - [ ] Naming follows Ubiquitous Language
 - [ ] Value Objects are immutable
 - [ ] API layer has no business logic
-- [ ] **IUnitOfWork NOT injected directly** - use `repository.UnitOfWork` instead
 
 ---
 
@@ -992,58 +866,6 @@ Would you like me to show you how to properly place this validation in the Domai
 5. **Repositories with SaveChanges()** → Use UnitOfWork pattern
 6. **Missing pagination** → Always paginate lists
 7. **Returning entities from commands** → Return Result<T> or Unit
-8. **Injecting IUnitOfWork directly** → Use `repository.UnitOfWork` instead
-
----
-
-## UNIT OF WORK PATTERN - CRITICAL RULE
-
-### ❌ NEVER Inject IUnitOfWork Directly
-
-```csharp
-// ❌ FORBIDDEN - Do NOT inject IUnitOfWork
-public class UpdateWarehouseCommandHandler(
-    IWarehouseRepository repository,
-    IUnitOfWork unitOfWork) // ❌ WRONG!
-{
-    public async Task Handle(...)
-    {
-        // ...
-        await unitOfWork.SaveChangesAsync(ct); // ❌ WRONG!
-    }
-}
-```
-
-### ✅ ALWAYS Use repository.UnitOfWork
-
-```csharp
-// ✅ CORRECT - Access UnitOfWork through repository
-public class UpdateWarehouseCommandHandler(
-    IWarehouseRepository repository)
-{
-    public async Task Handle(UpdateWarehouseCommand request, CancellationToken ct)
-    {
-        var warehouse = await repository.GetById(request.Id, tracking: true, ct)
-            ?? throw new NotFoundException("Warehouse not found");
-
-        warehouse.Update(request.Name, request.Location);
-        repository.Update(warehouse);
-
-        // ✅ CORRECT - Use repository.UnitOfWork
-        await repository.UnitOfWork.SaveEntitiesAsync(ct);
-
-        return new WarehouseDto { ... };
-    }
-}
-```
-
-### Why This Rule Exists
-
-1. **Single Responsibility**: Each repository owns its aggregate's persistence
-2. **Consistency**: The repository that modified the entity should save it
-3. **Testability**: Easier to mock repository with built-in UnitOfWork
-4. **Coupling**: Reduces dependencies in handlers (one less injected service)
-5. **Domain Events**: `SaveEntitiesAsync()` dispatches domain events before saving
 
 ---
 

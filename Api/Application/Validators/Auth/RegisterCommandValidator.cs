@@ -30,19 +30,5 @@ internal sealed class RegisterCommandValidator : AbstractValidator<RegisterComma
             .WithMessage("La contraseña no puede exceder los 100 caracteres")
             .Matches(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':""\\|,.<>\/?])")
             .WithMessage("La contraseña debe contener al menos una letra minúscula, una mayúscula, un número y un carácter especial");
-
-        RuleFor(x => x.WhatsAppNumber)
-            .NotEmpty()
-            .WithMessage("El número de WhatsApp es requerido")
-            .MaximumLength(20)
-            .WithMessage("El número de WhatsApp no puede exceder los 20 caracteres")
-            .Matches(@"^\+?[0-9\s\-]{10,20}$")
-            .WithMessage("El número de WhatsApp debe contener solo dígitos, opcionalmente con + al inicio (ej. +573001234567)");
-
-        RuleFor(x => x.TenantName)
-            .NotEmpty()
-            .WithMessage("El nombre del tenant (empresa) es requerido")
-            .MaximumLength(200)
-            .WithMessage("El nombre del tenant no puede exceder los 200 caracteres");
     }
 }

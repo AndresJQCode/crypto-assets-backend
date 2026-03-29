@@ -26,32 +26,8 @@ public class AppSettings
     public MemoryCacheSettings MemoryCache { get; set; } = new();
     public PaginationSettings Pagination { get; set; } = new();
     public CircuitBreakerSettings CircuitBreaker { get; set; } = new();
-    public ConnectorsSettings? Connectors { get; set; }
-    public PubSubSettings? PubSub { get; set; }
-    public required string EncryptionKey { get; set; }
-
-    public class ConnectorsSettings
-    {
-        public ShopifyConnectorSettings? Shopify { get; set; }
-
-        public class ShopifyConnectorSettings
-        {
-            public required string ClientId { get; set; }
-            public required string ClientSecret { get; set; }
-            [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1056:URI properties should not be strings", Justification = "String is easier to configure in appsettings.json")]
-            public required string RedirectUri { get; set; }
-            public required string[] Scopes { get; set; }
-            public required string ApiVersion { get; set; }
-            public int TimeoutSeconds { get; set; } = 30;
-        }
-    }
-
     public class EmailSettings
     {
-        /// <summary>
-        /// Email provider to use: "Infobip", "SendGrid", "Smtp"
-        /// </summary>
-        public string Provider { get; set; } = "Infobip";
         public required string FromEmail { get; set; }
         public required string FromName { get; set; }
         public required string TestEmailTo { get; set; }
@@ -255,26 +231,20 @@ public class AppSettings
         public bool Enabled { get; set; } = true;
 
         /// <summary>
-        /// Google Cloud Project ID (requerido para reCAPTCHA Enterprise).
+        /// Secret key de reCAPTCHA (obtener de Google reCAPTCHA Admin)
         /// </summary>
-        public string ProjectId { get; set; } = string.Empty;
+        public string SecretKey { get; set; } = string.Empty;
 
         /// <summary>
-        /// Contenido JSON de la cuenta de servicio (opcional). Ideal para Azure DevOps / variables de entorno:
-        /// guardar el JSON como secreto e inyectarlo aquí. Tiene prioridad sobre CredentialsPath.
-        /// </summary>
-        public string? CredentialsJson { get; set; }
-
-        /// <summary>
-        /// Site key de reCAPTCHA (para el frontend). En Enterprise coincide con la key del sitio.
+        /// Site key de reCAPTCHA (para el frontend)
         /// </summary>
         public string SiteKey { get; set; } = string.Empty;
 
         /// <summary>
-        /// Acción esperada en el token (debe coincidir con el atributo action del widget en el frontend).
-        /// Ej: "login", "register", "submit". Si está vacío no se valida la acción.
+        /// URL de verificación de reCAPTCHA
         /// </summary>
-        public string ExpectedAction { get; set; } = "submit";
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1056:URI properties should not be strings", Justification = "String is easier to configure in appsettings.json")]
+        public string VerificationUrl { get; set; } = "https://www.google.com/recaptcha/api/siteverify";
 
         /// <summary>
         /// Score mínimo para reCAPTCHA v3 (0.0 a 1.0)
@@ -425,40 +395,6 @@ public class AppSettings
         /// Timeout en segundos para cada operación protegida por el circuit breaker
         /// </summary>
         public int TimeoutSeconds { get; set; } = 5;
-    }
-
-    public class PubSubSettings
-    {
-        /// <summary>
-        /// Enable or disable Pub/Sub integration. When false, no connection to Google Cloud Pub/Sub is made.
-        /// </summary>
-        public bool Enabled { get; set; } = true;
-
-        /// <summary>
-        /// Google Cloud Project ID
-        /// </summary>
-        public string? ProjectId { get; set; }
-
-        /// <summary>
-        /// Subscription ID for order events
-        /// </summary>
-        public string? SubscriptionId { get; set; }
-
-        /// <summary>
-        /// Path to service account credentials JSON file.
-        /// If not specified, Application Default Credentials (ADC) will be used.
-        /// </summary>
-        public string? CredentialsPath { get; set; }
-
-        /// <summary>
-        /// Maximum time in seconds to wait for messages before returning empty response
-        /// </summary>
-        public int PullTimeoutSeconds { get; set; } = 30;
-
-        /// <summary>
-        /// Acknowledgment deadline in seconds (how long before unacked messages are redelivered)
-        /// </summary>
-        public int AckDeadlineSeconds { get; set; } = 60;
     }
 
 }

@@ -6,12 +6,11 @@ namespace Api.Apis.DashboardEndpoints;
 
 internal static class DashboardApi
 {
-    public static RouteGroupBuilder MapDashboardEndpoints(this RouteGroupBuilder tenantGroup)
+    public static RouteGroupBuilder MapDashboardEndpoints(this IEndpointRouteBuilder app)
     {
-        RouteGroupBuilder api = tenantGroup.MapGroup("/dashboard")
-            .WithTags("Tenant - Dashboard");
+        RouteGroupBuilder api = app.MapGroup("dashboard");
 
-        // GET /api/dashboard/metrics - Obtiene las estadísticas generales del dashboard
+        // GET /dashboard/metrics - Obtiene las estadísticas generales del dashboard
         api.MapGet("/metrics", async (IMediator mediator) =>
         {
             var metrics = await mediator.Send(new GetDashboardMetricsQuery());
@@ -19,7 +18,8 @@ internal static class DashboardApi
         })
         .WithName("GetDashboardMetrics")
         .WithSummary("Obtener métricas generales del dashboard")
-        .WithDescription("Obtiene las métricas generales del dashboard para el tenant actual.")
+        .WithDescription("Obtiene las métricas generales del dashboard. Requiere permiso: Dashboard.Read")
+        .RequireAuthorization()
         .Produces<IEnumerable<DashboardMetricsDto>>();
 
         return api;

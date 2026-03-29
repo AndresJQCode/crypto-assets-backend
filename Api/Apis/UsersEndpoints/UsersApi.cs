@@ -7,10 +7,11 @@ using Api.Application.Queries.PermissionQueries;
 using Api.Application.Queries.RoleQueries;
 using Api.Application.Queries.Users;
 using Api.Application.Queries.UsersQueries;
+using Api.Constants;
 using Api.Extensions;
+using Api.Utilities;
 using Domain.AggregatesModel.PermissionAggregate;
 using Domain.Exceptions;
-using Infrastructure.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Http.HttpResults;
 
@@ -19,31 +20,30 @@ namespace Api.Apis.UsersEndpoints;
 
 internal static class UsersApi
 {
-    public static RouteGroupBuilder MapUsersEndpoints(this RouteGroupBuilder tenantGroup)
+    public static RouteGroupBuilder MapUsersEndpoints(this IEndpointRouteBuilder app)
     {
-        RouteGroupBuilder api = tenantGroup.MapGroup("/users")
-            .WithTags("Tenant - Users");
-
-        api.MapGetPaginated<GetAllUsersQuery, UserResponseDto>(
-            "/",
-            () => new GetAllUsersQuery())
+        RouteGroupBuilder api = app.MapGroup("users");
+        api.MapGet("/", GetAll)
             .WithName("GetAllUsers")
             .WithSummary("Obtener todos los usuarios")
-            .WithDescription("Obtiene una lista paginada de todos los usuarios con búsqueda y ordenamiento (query: ?page=1&limit=20&search=nombre&sortBy=name&sortOrder=asc)")
-            .RequirePermission(PermissionResourcesConstants.Users, PermissionActionsConstants.Read)
+            .WithDescription("Obtiene una lista paginada de todos los usuarios. Requiere permiso: Users.Read")
+            .RequireAuthorization()
+            .RequirePermission(PermissionConstants.Resources.Users, PermissionConstants.Actions.Read)
             .Produces<PaginationResponseDto<UserResponseDto>>();
         api.MapGet("/{id:guid}", GetById)
             .WithName("GetUserById")
             .WithSummary("Obtener usuario por ID")
             .WithDescription("Obtiene un usuario específico por su ID. Requiere permiso: Users.Read")
-            .RequirePermission(PermissionResourcesConstants.Users, PermissionActionsConstants.Read)
+            .RequireAuthorization()
+            .RequirePermission(PermissionConstants.Resources.Users, PermissionConstants.Actions.Read)
             .Produces<UserResponseDto>()
             .Produces<NotFoundException>();
         api.MapDelete("/{id:guid}", Delete)
             .WithName("DeleteUser")
             .WithSummary("Eliminar usuario")
             .WithDescription("Elimina un usuario por su ID (eliminación lógica). Requiere permiso: Users.Delete")
-            .RequirePermission(PermissionResourcesConstants.Users, PermissionActionsConstants.Delete)
+            .RequireAuthorization()
+            .RequirePermission(PermissionConstants.Resources.Users, PermissionConstants.Actions.Delete)
             .Produces<NoContent>()
             .Produces<NotFoundException>()
             .Produces<ProblemHttpResult>();
@@ -51,7 +51,8 @@ internal static class UsersApi
             .WithName("UpdateUserStatus")
             .WithSummary("Actualizar estado del usuario")
             .WithDescription("Activa o desactiva un usuario por su ID. Requiere permiso: Users.Update")
-            .RequirePermission(PermissionResourcesConstants.Users, PermissionActionsConstants.Update)
+            .RequireAuthorization()
+            .RequirePermission(PermissionConstants.Resources.Users, PermissionConstants.Actions.Update)
             .Produces<NoContent>()
             .Produces<NotFoundException>()
             .Produces<ProblemHttpResult>();
@@ -59,60 +60,79 @@ internal static class UsersApi
             .WithName("CreateUser")
             .WithSummary("Crear usuario")
             .WithDescription("Crea un nuevo usuario en el sistema. Requiere permiso: Users.Create")
-            .RequirePermission(PermissionResourcesConstants.Users, PermissionActionsConstants.Create)
+            .RequireAuthorization()
+            .RequirePermission(PermissionConstants.Resources.Users, PermissionConstants.Actions.Create)
             .Produces<UserResponseDto>(StatusCodes.Status201Created)
             .Produces<ErrorResponseDto>(StatusCodes.Status400BadRequest);
         api.MapPut("/{id:guid}", Update)
             .WithName("UpdateUser")
             .WithSummary("Actualizar usuario")
             .WithDescription("Actualiza un usuario existente incluyendo sus datos básicos y roles asignados. Si se proporcionan RoleIds, se actualizarán los roles del usuario. Requiere permiso: Users.Update")
-            .RequirePermission(PermissionResourcesConstants.Users, PermissionActionsConstants.Update)
+            .RequireAuthorization()
+            .RequirePermission(PermissionConstants.Resources.Users, PermissionConstants.Actions.Update)
             .Produces<UserResponseDto>()
             .Produces<NotFoundException>()
-            .Produces<BadRequestException>(StatusCodes.Status400BadRequest);
+            .Produces<ErrorResponseDto>(StatusCodes.Status400BadRequest)
+            .Produces<ProblemHttpResult>();
 
         // GET /users/{id}/permissions - Obtiene los permisos de un usuario específico
         api.MapGet("/{id:guid}/permissions", GetUserPermissions)
             .WithName("GetUserPermissions")
             .WithSummary("Obtener permisos de usuario")
             .WithDescription("Obtiene los permisos de un usuario específico. Requiere permiso: Permissions.Read")
-            .RequirePermission(PermissionResourcesConstants.Permissions, PermissionActionsConstants.Read)
-            .Produces<IEnumerable<UserPermissionDto>>();
+            .RequireAuthorization()
+            .RequirePermission(PermissionConstants.Resources.Permissions, PermissionConstants.Actions.Read)
+            .Produces<IEnumerable<UserPermissionDto>>()
+            .Produces<ProblemHttpResult>();
 
         // GET /users/{id}/permissions/detailed - Obtiene los permisos detallados de un usuario específico
         api.MapGet("/{id:guid}/permissions/detailed", GetUserPermissionsDetailed)
             .WithName("GetUserPermissionsDetailed")
             .WithSummary("Obtener permisos detallados por usuario")
             .WithDescription("Obtiene los permisos detallados asignados a un usuario específico. Requiere permiso: Permissions.Read")
-            .RequirePermission(PermissionResourcesConstants.Permissions, PermissionActionsConstants.Read)
-            .Produces<IEnumerable<PermissionDto>>();
+            .RequireAuthorization()
+            .RequirePermission(PermissionConstants.Resources.Permissions, PermissionConstants.Actions.Read)
+            .Produces<IEnumerable<PermissionDto>>()
+            .Produces<ProblemHttpResult>();
 
         // GET /users/{id}/permissions/check - Verifica si un usuario tiene un permiso específico
         api.MapGet("/{id:guid}/permissions/check", CheckUserPermission)
             .WithName("CheckUserPermission")
             .WithSummary("Verificar permiso de usuario")
             .WithDescription("Verifica si un usuario tiene un permiso específico. Requiere permiso: Permissions.Read")
-            .RequirePermission(PermissionResourcesConstants.Permissions, PermissionActionsConstants.Read)
-            .Produces<bool>();
+            .RequireAuthorization()
+            .RequirePermission(PermissionConstants.Resources.Permissions, PermissionConstants.Actions.Read)
+            .Produces<bool>()
+            .Produces<ProblemHttpResult>();
 
         // GET /users/{id}/permissions-by-roles - Obtiene todos los permisos de un usuario (a través de sus roles)
         api.MapGet("/{id:guid}/permissions-by-roles", GetUserPermissionsByRoles)
             .WithName("GetUserPermissionsByRoles")
             .WithSummary("Obtener permisos de usuario por roles")
             .WithDescription("Obtiene todos los permisos de un usuario específico a través de sus roles asignados. Requiere permiso: Permissions.Read")
-            .RequirePermission(PermissionResourcesConstants.Permissions, PermissionActionsConstants.Read)
-            .Produces<IEnumerable<PermissionDto>>();
+            .RequireAuthorization()
+            .RequirePermission(PermissionConstants.Resources.Permissions, PermissionConstants.Actions.Read)
+            .Produces<IEnumerable<PermissionDto>>()
+            .Produces<ProblemHttpResult>();
 
         // GET /users/{id}/roles - Obtiene los roles de un usuario
         api.MapGet("/{id:guid}/roles", GetUserRoles)
             .WithName("GetUserRoles")
             .WithSummary("Obtener roles de usuario")
             .WithDescription("Obtiene los roles asignados a un usuario específico. Requiere permiso: Roles.Read")
-            .RequirePermission(PermissionResourcesConstants.Roles, PermissionActionsConstants.Read)
-            .Produces<IEnumerable<RoleDto>>();
+            .RequireAuthorization()
+            .RequirePermission(PermissionConstants.Resources.Roles, PermissionConstants.Actions.Read)
+            .Produces<IEnumerable<RoleDto>>()
+            .Produces<ProblemHttpResult>();
 
 
         return api;
+    }
+
+    private static async Task<PaginationResponseDto<UserResponseDto>> GetAll(IMediator mediator, IHttpContextAccessor httpContextAccessor, CancellationToken cancellationToken)
+    {
+        PaginationParameters? paginationParameters = PaginationHelper.GetPaginationParametersFromQueryString(httpContextAccessor);
+        return await mediator.Send(new GetAllUsersQuery { PaginationParameters = paginationParameters }, cancellationToken);
     }
 
     private static async Task<UserResponseDto> GetById(IMediator mediator, Guid id, CancellationToken cancellationToken) => await mediator.Send(new GetUserByIdQuery(id), cancellationToken);

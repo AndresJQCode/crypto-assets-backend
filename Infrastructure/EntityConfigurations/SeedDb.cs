@@ -1,5 +1,4 @@
 using Domain.AggregatesModel.RoleAggregate;
-using Domain.AggregatesModel.TenantAggregate;
 using Domain.AggregatesModel.UserAggregate;
 using Microsoft.AspNetCore.Identity;
 
@@ -26,9 +25,6 @@ public static class SeedDb
 
         // asignar permisos a usuarios (mantener para compatibilidad)
         await PermissionSeedData.SeedPermissionsToUsersAsync(context);
-
-        // seedear definiciones de conectores
-        await ConnectorSeedData.SeedConnectorDefinitionsAsync(context);
 
     }
 

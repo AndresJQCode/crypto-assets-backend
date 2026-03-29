@@ -10,8 +10,6 @@ namespace Infrastructure
             public const string DefaultProvider = "Default";
             public const string AccessTokenName = "accessToken";
             public const string RefreshTokenName = "refreshToken";
-            /// <summary>Claim para el tenant del usuario en el JWT. Null/empty = SuperAdmin (plataforma).</summary>
-            public const string TenantIdClaim = "tenant_id";
         }
 
         public static class AuditEntityTypes
@@ -25,7 +23,6 @@ namespace Infrastructure
         public static class AuditActions
         {
             // Acciones de autenticación
-            public const string UserRegistered = "USER_REGISTERED";
             public const string LoginFailed = "LOGIN_FAILED";
             public const string PasswordResetRequested = "PASSWORD_RESET_REQUESTED";
             public const string PasswordChanged = "PASSWORD_CHANGED";

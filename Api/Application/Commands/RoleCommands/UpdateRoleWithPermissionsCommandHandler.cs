@@ -4,7 +4,6 @@ using Api.Infrastructure.Services;
 using Domain.AggregatesModel.AuditAggregate;
 using Domain.AggregatesModel.PermissionAggregate;
 using Domain.AggregatesModel.RoleAggregate;
-using Domain.AggregatesModel.UserAggregate;
 using Domain.Exceptions;
 using Domain.Interfaces;
 using Infrastructure;
@@ -19,8 +18,7 @@ internal sealed class UpdateRoleWithPermissionsCommandHandler(
         IPermissionRepository permissionRepository,
         IPermissionRoleRepository permissionRoleRepository,
         IPermissionService permissionService,
-        IAuditLogRepository auditLogRepository,
-        IUserRoleRepository userRoleRepository,
+        ApiContext context,
         IIdentityService identityService
 ) : IRequestHandler<UpdateRoleWithPermissionsCommand, UpdateRoleWithPermissionsResponse>
 {
@@ -132,8 +130,8 @@ internal sealed class UpdateRoleWithPermissionsCommandHandler(
                 additionalData: additionalData
             );
 
-            await auditLogRepository.Create(auditLog, cancellationToken);
-            await auditLogRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
+            context.AuditLogs.Add(auditLog);
+            await context.SaveEntitiesAsync(cancellationToken);
         }
 
         // 7. Obtener los permisos actualizados para la respuesta
@@ -209,8 +207,13 @@ internal sealed class UpdateRoleWithPermissionsCommandHandler(
 
     private async Task InvalidateCacheForRoleUsers(Guid roleId, CancellationToken cancellationToken)
     {
-        var userIds = await userRoleRepository.GetUserIdsByRoleIdAsync(roleId, cancellationToken);
+        // Obtener usuarios que tienen este rol específico usando consulta directa
+        var userIds = await context.UserRoles
+            .Where(ur => ur.RoleId == roleId)
+            .Select(ur => ur.UserId)
+            .ToListAsync(cancellationToken);
 
+        // Invalidar caché solo para estos usuarios
         foreach (var userId in userIds)
         {
             await permissionService.InvalidateUserCacheAsync(userId);

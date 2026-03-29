@@ -19,7 +19,6 @@ internal sealed class PermissionService(IMediator mediator, IPermissionRepositor
             {
                 logger.LogDebug("Permission {Resource}.{Action} found in cache for user {UserId}", resource, action, userId);
             }
-
             return true;
         }
 
@@ -46,7 +45,6 @@ internal sealed class PermissionService(IMediator mediator, IPermissionRepositor
             {
                 logger.LogDebug("User permissions found in cache for user {UserId}", userId);
             }
-
             return cachedPermissions;
         }
 
@@ -92,9 +90,6 @@ internal sealed class PermissionService(IMediator mediator, IPermissionRepositor
     public async Task InvalidateAllCacheAsync()
     {
         await cacheService.InvalidateAllCacheAsync();
-        if (logger.IsEnabled(LogLevel.Information))
-        {
-            logger.LogInformation("Invalidated all permission cache");
-        }
+        logger.LogInformation("Invalidated all permission cache");
     }
 }

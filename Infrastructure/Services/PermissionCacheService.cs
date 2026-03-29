@@ -231,10 +231,7 @@ public class PermissionCacheService(
             if (cache is MemoryCache memoryCache)
             {
                 memoryCache.Compact(1.0); // Remove all entries
-                if (logger.IsEnabled(LogLevel.Information))
-                {
-                    logger.LogInformation("Invalidated all permission cache");
-                }
+                logger.LogInformation("Invalidated all permission cache");
             }
             else
             {

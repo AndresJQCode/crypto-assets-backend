@@ -45,7 +45,7 @@ public class MicrosoftOAuthService(
             if (logger.IsEnabled(LogLevel.Information))
             {
                 logger.LogInformation("Intercambiando código por token. TenantId: {TenantId}, ClientId: {ClientId}",
-                    microsoftSettings.TenantId, microsoftSettings.ClientId);
+                        microsoftSettings.TenantId, microsoftSettings.ClientId);
             }
 
             using var requestBody = new FormUrlEncodedContent(new[]
@@ -106,10 +106,7 @@ public class MicrosoftOAuthService(
                 throw new InvalidOperationException("No se pudo deserializar la respuesta del token de Microsoft");
             }
 
-            if (logger.IsEnabled(LogLevel.Information))
-            {
-                logger.LogInformation("Token intercambiado exitosamente");
-            }
+            logger.LogInformation("Token intercambiado exitosamente");
 
             // Métrica de Prometheus: exchange exitoso de Microsoft
             InfrastructureMetrics.AuthenticationAttemptsTotal
@@ -147,10 +144,7 @@ public class MicrosoftOAuthService(
             httpClient.DefaultRequestHeaders.Authorization =
                     new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
 
-            if (logger.IsEnabled(LogLevel.Information))
-            {
-                logger.LogInformation("Obteniendo información del usuario de Microsoft Graph");
-            }
+            logger.LogInformation("Obteniendo información del usuario de Microsoft Graph");
 
             var response = await httpClient.GetAsync(new Uri("https://graph.microsoft.com/v1.0/me"));
 

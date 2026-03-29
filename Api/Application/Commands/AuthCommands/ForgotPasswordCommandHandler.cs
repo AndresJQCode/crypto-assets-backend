@@ -2,15 +2,16 @@ using System.Text;
 using System.Text.Json;
 using Api.Application.Dtos.Auth;
 using Api.Extensions;
-using Api.Utilities;
 using Domain.AggregatesModel.AuditAggregate;
 using Domain.AggregatesModel.UserAggregate;
 using Domain.Interfaces;
 using Infrastructure;
 using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
+using Api.Utilities;
 
 namespace Api.Application.Commands.AuthCommands;
 
@@ -28,16 +29,17 @@ internal sealed class ForgotPasswordCommandHandler(
                 IEmailSender<User> emailSender,
                 IOptionsMonitor<AppSettings> appSettings,
                 IRecaptchaService recaptchaService,
-                ICacheService cacheService,
                 IHttpContextAccessor httpContextAccessor,
-                IAuditLogRepository auditLogRepository) : IRequestHandler<ForgotPasswordCommand, ForgotPasswordResponseDto>
+                ICacheService cacheService,
+                ApiContext context) : IRequestHandler<ForgotPasswordCommand, ForgotPasswordResponseDto>
 {
     public async Task<ForgotPasswordResponseDto> Handle(ForgotPasswordCommand request, CancellationToken cancellationToken)
     {
         // Validar reCAPTCHA si está habilitado
         if (appSettings.CurrentValue.Recaptcha.Enabled && appSettings.CurrentValue.Recaptcha.RequiresValidation("/auth/forgotPassword"))
         {
-            var recaptchaResult = await recaptchaService.ValidateTokenAsync(recaptchaToken: request.RecaptchaToken ?? string.Empty, recaptchaAction: "FORGOT_PASSWORD");
+            var remoteIp = httpContextAccessor.HttpContext?.GetClientIpAddress();
+            var recaptchaResult = await recaptchaService.ValidateTokenAsync(request.RecaptchaToken ?? string.Empty, remoteIp);
 
             if (!recaptchaResult.Success)
             {
@@ -144,12 +146,11 @@ internal sealed class ForgotPasswordCommandHandler(
                 userId: user.Id,
                 userName: user.Email,
                 reason: "Solicitud de reseteo de contraseña",
-                additionalData: additionalData,
-                ip: remoteIp
+                additionalData: additionalData
             );
 
-            await auditLogRepository.Create(auditLog, cancellationToken);
-            await auditLogRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
+            context.AuditLogs.Add(auditLog);
+            await context.SaveEntitiesAsync(cancellationToken);
         }
 
         // Por seguridad, siempre devolver OK para no revelar si el email existe

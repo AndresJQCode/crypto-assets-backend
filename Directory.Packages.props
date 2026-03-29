@@ -2,65 +2,74 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
+
   <ItemGroup>
     <!-- Health Checks -->
     <PackageVersion Include="AspNetCore.HealthChecks.NpgSql" Version="9.0.0" />
     <PackageVersion Include="AspNetCore.HealthChecks.UI.Client" Version="9.0.0" />
+
     <!-- Azure -->
-    <PackageVersion Include="Azure.Extensions.AspNetCore.Configuration.Secrets" Version="1.4.0" />
-    <PackageVersion Include="Azure.Identity" Version="1.17.1" />
+    <PackageVersion Include="Azure.Extensions.AspNetCore.Configuration.Secrets" Version="1.5.0" />
+    <PackageVersion Include="Azure.Identity" Version="1.19.0" />
     <PackageVersion Include="Azure.Messaging.ServiceBus" Version="7.20.1" />
+
     <!-- Data Access -->
-    <PackageVersion Include="Bybit.Net" Version="6.4.0" />
-    <PackageVersion Include="Dapper" Version="2.1.66" />
-    <PackageVersion Include="Google.Apis.Auth" Version="1.73.0" />
-    <PackageVersion Include="Google.Cloud.PubSub.V1" Version="3.32.0" />
-    <PackageVersion Include="Google.Cloud.RecaptchaEnterprise.V1" Version="2.20.0" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.2" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.2" />
-    <PackageVersion Include="Npgsql.DependencyInjection" Version="10.0.1" />
-    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
+    <PackageVersion Include="Dapper" Version="2.1.72" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.5" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.5" />
+    <PackageVersion Include="Npgsql.DependencyInjection" Version="10.0.2" />
+    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.1" />
+
     <!-- Validation -->
     <PackageVersion Include="FluentValidation" Version="12.1.1" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
+
     <!-- Mapping -->
-    <PackageVersion Include="Mapster" Version="7.4.0" />
+    <PackageVersion Include="Mapster" Version="10.0.6" />
+
     <!-- Mediator -->
     <PackageVersion Include="MediatR" Version="12.5.0" />
+
     <!-- Authentication & Authorization -->
-    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.2" />
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.5" />
     <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.2" />
     <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.15.0" />
+
     <!-- API -->
-    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.2" />
-    <PackageVersion Include="Scalar.AspNetCore" Version="2.12.18" />
+    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.5" />
+    <PackageVersion Include="Scalar.AspNetCore" Version="2.13.16" />
+
     <!-- Configuration -->
-    <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="10.0.2" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.2" />
-    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.2" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="10.0.5" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.5" />
+
     <!-- Monitoring & Metrics -->
     <PackageVersion Include="prometheus-net" Version="8.2.1" />
     <PackageVersion Include="prometheus-net.AspNetCore" Version="8.2.1" />
     <PackageVersion Include="prometheus-net.AspNetCore.HealthChecks" Version="8.2.1" />
+
     <!-- Logging -->
-    <PackageVersion Include="Serilog" Version="4.3.0" />
+    <PackageVersion Include="Serilog" Version="4.3.1" />
     <PackageVersion Include="Serilog.AspNetCore" Version="10.0.0" />
     <PackageVersion Include="Serilog.Enrichers.Environment" Version="3.0.1" />
     <PackageVersion Include="Serilog.Enrichers.Thread" Version="4.0.0" />
     <PackageVersion Include="Serilog.Exceptions" Version="8.4.0" />
     <PackageVersion Include="Serilog.Sinks.Console" Version="6.1.1" />
     <PackageVersion Include="Serilog.Sinks.Grafana.Loki" Version="8.3.2" />
+
     <!-- Email -->
     <PackageVersion Include="Infobip.Api.Client" Version="4.0.2" />
     <PackageVersion Include="SendGrid" Version="9.29.3" />
-    <!-- Trading & Exchange -->
-    <PackageVersion Include="bybit.net.api" Version="1.2.1" />
+
     <!-- Resilience -->
-    <PackageVersion Include="Polly" Version="8.6.5" />
+    <PackageVersion Include="Polly" Version="8.6.6" />
+
     <!-- Development Tools -->
     <PackageVersion Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.23.0" />
+
     <!-- Code Analysis -->
     <PackageVersion Include="SonarAnalyzer.CSharp" Version="10.18.0.131500" />
+
     <!-- System -->
     <PackageVersion Include="System.Reflection.TypeExtensions" Version="4.7.0" />
   </ItemGroup>

@@ -32,7 +32,6 @@ internal static class AuthExtensions
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<IUserInfoService, UserInfoService>();
         services.AddScoped<IIdentityService, IdentityService>();
-        services.AddScoped<ITenantContext, TenantContext>();
 
         // Registrar los proveedores de autenticación
         services.AddScoped<IAuthProviderService, GoogleAuthProviderService>();

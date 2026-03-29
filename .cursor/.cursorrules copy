@@ -1,0 +1,93 @@
+# Reglas para Cursor
+Al iniciar o al trabajar en este proyecto, sigue siempre las guías del archivo CLAUDE.md en la raíz del repositorio (convenciones, arquitectura, comandos y patrones del proyecto).
+
+## Constructor Primario
+
+- Siempre usar constructor primario (primary constructor) en C# cuando sea posible
+- Preferir la sintaxis de constructor primario sobre constructores tradicionales
+- Aplicar esta regla especialmente en clases de dominio y entidades
+
+## Instrucciones generales
+
+- Usar principios de SOLID para la arquitectura de la aplicación.
+- Usar DDD para la arquitectura de la aplicación.
+- Usar MediatR para la comunicación entre capas.
+- Usar FluentValidation para la validación de datos.
+- Usar AutoMapper usando .Adapt<T>() para la conversión de datos.
+- Usar Serilog para el logging.
+- Usar Microsoft.Extensions.Caching.Memory para la caché.
+- Usar Microsoft.Extensions.Logging para el logging.
+- Usar buenas prácticas de programación.
+
+## Reglas de documentación
+
+- Usar Markdown para la documentación.
+- Usar la sintaxis de Markdown para la documentación.
+- Agregar documentación en la carpeta docs.
+
+## Reglas de Api Endpoints
+
+- Usar siempre minimal api para los endpoints.
+
+## Reglas para las clases
+
+- Siempre usar csharp_style_namespace_declarations = file_scoped, ejemplo: Domain.AggregatesModel.UserAggregate;
+
+## Reglas para las validaciones
+
+- Usar FluentValidation para las validaciones.
+
+## Reglas para QueryHandlers paginados
+
+- **NUNCA** usar `GetByFilter() + AsQueryable()` en handlers que devuelven `PaginationResponseDto<T>`.
+  Esto trae **todas las filas a RAM** y filtra/pagina en C#, lo cual no escala.
+
+  ```csharp
+  // ❌ PROHIBIDO
+  var all = await warehouseRepository.GetByFilter();
+  var query = all.AsQueryable();
+  query = query.Where(...).Skip(...).Take(...);
+  ```
+
+- **SIEMPRE** usar `GetByFilterPagination` con `Expression<Func<T, bool>>` y `Func<IQueryable<T>, IOrderedQueryable<T>>`.
+  Toda la lógica de filtrado, ordenamiento y paginación se traduce a SQL en PostgreSQL.
+
+  ```csharp
+  // ✅ CORRECTO
+  // ⚠️ Para búsqueda case-insensitive en PostgreSQL: usar EF.Functions.ILike, NO Contains(StringComparison)
+  // EF Core no puede traducir Contains(value, StringComparison) a SQL → error en runtime
+  Expression<Func<MyEntity, bool>> filter = x =>
+      (tenantId == null || x.TenantId == tenantId) &&
+      (search == null || EF.Functions.ILike(x.Name, $"%{search}%"));
+
+  Func<IQueryable<MyEntity>, IOrderedQueryable<MyEntity>> orderBy = p.SortBy?.ToUpperInvariant() switch
+  {
+      "NAME" => p.SortOrder?.Equals("desc", StringComparison.OrdinalIgnoreCase) == true
+          ? q => q.OrderByDescending(x => x.Name)
+          : q => q.OrderBy(x => x.Name),
+      _ => q => q.OrderBy(x => x.Name)
+  };
+
+  var paged = await warehouseRepository.GetByFilterPagination(
+      filter: filter, orderBy: orderBy,
+      page: p.Page, pageSize: p.Limit,
+      includeCount: true, cancellationToken: ct);
+
+  return new PaginationResponseDto<MyDto>
+  {
+      Data = paged.Items.Adapt<IReadOnlyList<MyDto>>(),
+      TotalCount = paged.TotalCount,
+      TotalPages = paged.TotalPages,
+      Limit = p.Limit,
+      Page = p.Page
+  };
+  ```
+
+- Referencia canónica: `Application/Queries/WarehouseQueries/GetAllWarehousesQueryHandler.cs`
+- Guía completa: `docs/Pagination-Pattern.md`
+
+## Reglas para Entity Framework Core
+
+- No crear migraciones manualmente.
+- **Nunca editar los archivos de migración:** ni el `*.cs` de cada migración ni el `*.Designer.cs` ni `ApiContextModelSnapshot.cs`. Son generados por EF Core y no deben modificarse a mano.
+- Para cambios en el modelo (entidades, DbContext), crear una nueva migración con `dotnet ef migrations add <Nombre>` y aplicar con `dotnet ef database update`. Si una migración quedó mal, quitarla con `dotnet ef migrations remove` y volver a generarla.

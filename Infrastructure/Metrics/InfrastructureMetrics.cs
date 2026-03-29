@@ -158,32 +158,6 @@ public static class InfrastructureMetrics
                 {
                     LabelNames = new[] { "operation", "status" }
                 });
-
-        // ===== MÉTRICAS DE BYBIT =====
-
-        BybitApiCallsTotal = Prometheus.Metrics
-            .CreateCounter(
-                $"{_metricPrefix}_bybit_api_calls_total",
-                "Total de llamadas a Bybit API",
-                new CounterConfiguration
-                {
-                    LabelNames = new[] { "endpoint", "status" }
-                });
-
-        BybitApiCallDuration = Prometheus.Metrics
-            .CreateHistogram(
-                $"{_metricPrefix}_bybit_api_call_duration_seconds",
-                "Duración de llamadas a Bybit API en segundos",
-                new HistogramConfiguration
-                {
-                    LabelNames = new[] { "endpoint" },
-                    Buckets = Histogram.ExponentialBuckets(0.01, 2, 12)
-                });
-
-        BybitRateLimitHitsTotal = Prometheus.Metrics
-            .CreateCounter(
-                $"{_metricPrefix}_bybit_rate_limit_hits_total",
-                "Total de veces que se alcanzó el rate limit de Bybit");
     }
 
     // ===== MÉTRICAS DE CACHÉ GENÉRICO =====
@@ -279,23 +253,4 @@ public static class InfrastructureMetrics
     /// Labels: operation, status
     /// </summary>
     public static Counter UserOperationsTotal { get; private set; } = null!;
-
-    // ===== MÉTRICAS DE BYBIT =====
-
-    /// <summary>
-    /// Total de llamadas a Bybit API
-    /// Labels: endpoint, status
-    /// </summary>
-    public static Counter BybitApiCallsTotal { get; private set; } = null!;
-
-    /// <summary>
-    /// Duración de llamadas a Bybit API en segundos
-    /// Labels: endpoint
-    /// </summary>
-    public static Histogram BybitApiCallDuration { get; private set; } = null!;
-
-    /// <summary>
-    /// Total de veces que se alcanzó el rate limit de Bybit
-    /// </summary>
-    public static Counter BybitRateLimitHitsTotal { get; private set; } = null!;
 }

@@ -31,7 +31,6 @@ internal sealed class LoggingBehavior<TRequest, TResponse>(ILogger<LoggingBehavi
             {
                 logger.LogInformation("{RequestType} {RequestName} handled - response: {@Response}", requestType, requestName, response);
             }
-
             return response;
         }
         catch (Exception ex)
