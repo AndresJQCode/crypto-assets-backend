@@ -191,6 +191,12 @@ Api/
 
 ## Code Style and Conventions
 
+### 🔧 Si encuentras problemas de compilación por reglas de código:
+
+1. **NO desactives la regla**
+2. **Arregla el código** para cumplir con el estándar
+3. Si es imposible cumplir, documenta por qué y solicita aprobación
+
 ### C# Language Features (.cursorrules)
 
 **CRITICAL RULES**:

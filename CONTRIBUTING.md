@@ -3,23 +3,23 @@
 ## 🚨 REGLAS CRÍTICAS - NO NEGOCIABLES
 
 ### 📏 EditorConfig
+
 **⚠️ NUNCA eliminar o desactivar reglas del archivo `.editorconfig`**
 
 El archivo `.editorconfig` contiene estándares de código que mantienen la calidad y consistencia del proyecto.
 
 **Prohibido:**
+
 - ❌ Eliminar reglas existentes
 - ❌ Cambiar severidad de `error` a `warning` o `none`
-- ❌ Desactivar analyzers (CA*, SA*, IDE*)
+- ❌ Desactivar analyzers (CA*, SA*, IDE\*)
 - ❌ Agregar excepciones globales sin justificación documentada
 
 **Permitido:**
+
 - ✅ Agregar **nuevas** reglas más estrictas
 - ✅ Documentar excepciones en archivos específicos con comentarios
 - ✅ Mejorar configuraciones existentes (más restrictivo = mejor)
-
-**Excepción única aceptada:**
-- `CA1873` - Falso positivo conocido en .NET 10 para logging (ya configurado)
 
 ### 🔧 Si encuentras problemas de compilación por reglas de código:
 
