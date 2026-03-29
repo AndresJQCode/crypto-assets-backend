@@ -5,6 +5,7 @@ using Api.Infrastructure.Services;
 using Domain.AggregatesModel.AuditAggregate;
 using Domain.AggregatesModel.OrderAggregate;
 using Domain.AggregatesModel.PermissionAggregate;
+using Domain.AggregatesModel.PortfolioAggregate;
 using Domain.AggregatesModel.TenantAggregate;
 using Domain.AggregatesModel.UserAggregate;
 using Domain.Interfaces;
@@ -94,6 +95,7 @@ internal static class Extensions
         services.AddScoped<IOrderRepository, OrderRepository>();
         services.AddScoped<ITenantRepository, TenantRepository>();
         services.AddScoped<IUserRoleRepository, UserRoleRepository>();
+        services.AddScoped<IPortfolioRepository, PortfolioRepository>();
 
         return services;
     }

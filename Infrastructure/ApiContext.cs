@@ -4,6 +4,7 @@ using Domain.AggregatesModel.ConnectorDefinitionAggregate;
 using Domain.AggregatesModel.ConnectorInstanceAggregate;
 using Domain.AggregatesModel.OrderAggregate;
 using Domain.AggregatesModel.PermissionAggregate;
+using Domain.AggregatesModel.PortfolioAggregate;
 using Domain.AggregatesModel.RoleAggregate;
 using Domain.AggregatesModel.SystemConfigurationAggregate;
 using Domain.AggregatesModel.TenantAggregate;
@@ -69,6 +70,8 @@ public class ApiContext : IdentityDbContext<User, Role, Guid, UserClaim, UserRol
     public DbSet<OrderIntegrationEvent> OrderIntegrationEvents { get; set; } = null!;
     public DbSet<TradingOrder> TradingOrders { get; set; } = null!;
     public DbSet<SystemConfiguration> SystemConfigurations { get; set; } = null!;
+    public DbSet<Portfolio> Portfolios { get; set; } = null!;
+    public DbSet<PortfolioTransaction> PortfolioTransactions { get; set; } = null!;
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -95,6 +98,8 @@ public class ApiContext : IdentityDbContext<User, Role, Guid, UserClaim, UserRol
         builder.ApplyConfiguration(new OrderIntegrationEventConfiguration());
         builder.ApplyConfiguration(new TradingOrderConfiguration());
         builder.ApplyConfiguration(new SystemConfigurationConfiguration());
+        builder.ApplyConfiguration(new PortfolioEntityConfiguration());
+        builder.ApplyConfiguration(new PortfolioTransactionEntityConfiguration());
 
         // Seed data
         SystemConfigurationSeedData.SeedSystemConfigurations(builder);

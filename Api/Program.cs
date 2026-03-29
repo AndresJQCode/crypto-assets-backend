@@ -7,8 +7,10 @@ using Api.Apis.ConnectorInstancesEndpoints;
 using Api.Apis.DashboardEndpoints;
 using Api.Apis.PermissionRolesEndpoints;
 using Api.Apis.PermissionsEndpoints;
+using Api.Apis.Portfolio;
 using Api.Apis.RolesEndpoints;
 using Api.Apis.TenantsEndpoints;
+using Api.Apis.TradingOrder;
 using Api.Apis.UsersEndpoints;
 using Api.Application.Behaviors;
 using Api.Extensions;
@@ -179,6 +181,9 @@ tenantGroup.MapRolesEndpoints();
 tenantGroup.MapConnectorInstancesEndpoints();
 tenantGroup.MapBybitEndpoints();
 tenantGroup.MapPermissionRolesEndpoints();
+tenantGroup.MapPortfolioEndpoints();
+tenantGroup.MapTradingOrderEndpoints();
+tenantGroup.MapPnLMetricsEndpoints();
 
 // ============================================
 // PUBLIC ENDPOINTS - No authentication (/*)

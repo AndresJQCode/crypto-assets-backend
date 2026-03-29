@@ -91,7 +91,7 @@ internal sealed class GetOpenOrdersQueryHandler(
             if (existing == null)
             {
                 // Create new trading order entity
-                var newOrder = TradingOrder.CreateFromBybit(
+                var newOrder = Domain.AggregatesModel.TradingOrderAggregate.TradingOrder.CreateFromBybit(
                     connector.Id,
                     userId,
                     apiOrder.OrderId,
